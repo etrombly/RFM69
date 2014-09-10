@@ -289,7 +289,7 @@ class RFM69():
       self.writeReg(REG_PALEVEL, RF_PALEVEL_PA0_ON | RF_PALEVEL_PA1_OFF | RF_PALEVEL_PA2_OFF | powerLevel)
 
   def setHighPowerRegs(self, onOff):
-    if onOFF:
+    if onOff:
       self.writeReg(REG_TESTPA1, 0x5D)
       self.writeReg(REG_TESTPA2, 0x7C)
     else:
