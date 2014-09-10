@@ -10,6 +10,7 @@ class RFM69():
     self.nodeID = nodeID
     self.networkID = networkID
     self.isRFM69HW = isRFM69HW
+    self.mode = ""
 
     frfMSB = {RF69_315MHZ: RF_FRFMSB_315, RF69_433MHZ: RF_FRFMSB_433,
               RF69_868MHZ: RF_FRFMSB_868, RF69_915MHZ: RF_FRFMSB_915}
@@ -94,10 +95,35 @@ class RFM69():
       pass
 
   def setFreqeuncy(self, FRF):
-    pass
+    self.writeReg(REG_FRFMSB, FRF >> 16)
+    self.writeReg(REG_FRFMID, FRF >> 8)
+    self.writeReg(REG_FRFLSB, FRF)
 
   def setMode(self, newMode):
-    pass
+  	if newMode != self.mode:
+  	   if newMode == RF69_MODE_TX:
+  			self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_TRANSMITTER)
+        if self.isRFM69HW:
+          setHighPowerRegs(true)
+  		elif newMode == RF69_MODE_RX:
+  			self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_RECEIVER);
+        if self.isRFM69HW:
+          setHighPowerRegs(false)
+  		elif newMode == RF69_MODE_SYNTH:
+  			self.writeReg(REG_OPMODE, (selfreadReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SYNTHESIZER);
+  		elif newMode == RF69_MODE_STANDBY:
+  			self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_STANDBY);
+  		elif newMode == RF69_MODE_SLEEP:
+  			self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SLEEP);
+  		else:
+        return
+
+  	# we are using packet mode, so this check is not really needed
+    # but waiting for mode ready is necessary when going from sleep because the FIFO may not be immediately available from previous mode
+  	while self.mode == RF69_MODE_SLEEP and self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY == 0x00:
+      pass
+
+  	self.mode = newMode;
 
   def sleep(self):
     pass
@@ -172,7 +198,12 @@ class RFM69():
       self.writeReg(REG_PALEVEL, RF_PALEVEL_PA0_ON | RF_PALEVEL_PA1_OFF | RF_PALEVEL_PA2_OFF | powerLevel)
 
   def setHighPowerRegs(self, onOff):
-    pass
+    if onOFF:
+      self.writeReg(REG_TESTPA1, 0x5D)
+      self.writeReg(REG_TESTPA2, 0x7C)
+    else:
+      self.writeReg(REG_TESTPA1, 0x55)
+      self.writeReg(REG_TESTPA2, 0x70)
 
   def readAllRegs(self):
     pass
