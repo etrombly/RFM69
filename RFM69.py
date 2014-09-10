@@ -163,7 +163,7 @@ class RFM69():
     else:
       self.writeReg(REG_OCP, RF_OCP_ON)
       #enable P0 only
-      writeReg(REG_PALEVEL, RF_PALEVEL_PA0_ON | RF_PALEVEL_PA1_OFF | RF_PALEVEL_PA2_OFF | powerLevel)
+      self.writeReg(REG_PALEVEL, RF_PALEVEL_PA0_ON | RF_PALEVEL_PA1_OFF | RF_PALEVEL_PA2_OFF | powerLevel)
 
   def setHighPowerRegs(self, onOff):
     pass
