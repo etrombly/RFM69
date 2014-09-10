@@ -1088,5 +1088,6 @@ RF69_MODE_TX	= 4 # TX MODE
 COURSE_TEMP_COEF = -90 # puts the temperature reading in the ballpark, user can fine tune the returned value
 RF69_BROADCAST_ADDR = 255
 RF69_CSMA_LIMIT_MS = 1000
+RF69_CSMA_LIMIT_S = 1
 
 powerLevel = 31
