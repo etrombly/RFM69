@@ -203,7 +203,7 @@ class RFM69():
     if (len(buff) > RF69_MAX_DATA_LEN):
       buff = buff[0:RF69_MAX_DATA_LEN]
 
-    self.spi.xfer([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.Address])
+    self.spi.xfer([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address])
 
     if sendACK:
       self.spi.xfer([0x80])
@@ -218,7 +218,7 @@ class RFM69():
     GPIO.wait_for_edge(self.intPin, GPIO.RISING)
     self.setMode(RF69_MODE_STANDBY)
 
-  def interruptHandler(self):
+  def interruptHandler(self, pin):
     if self.mode == RF69_MODE_RX and self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
       self.setMode(RF69_MODE_STANDBY)
       self.spi.transfer([REG_FIFO & 0x7f])
