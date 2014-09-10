@@ -213,7 +213,7 @@ class RFM69():
     else:
       self.spi.xfer([0x00])
 
-    self.spi.xfer(list(buff))
+    self.spi.xfer(bytearray(buff))
 
     self.setMode(RF69_MODE_TX)
     GPIO.wait_for_edge(self.intPin, GPIO.RISING)
@@ -264,7 +264,7 @@ class RFM69():
   def encrypt(self, key):
     self.setMode(RF69_MODE_STANDBY)
     if key != 0 and len(key) == 16:
-      self.spi.xfer([REG_AESKEY1 | 0x80] + list(key))
+      self.spi.xfer([REG_AESKEY1 | 0x80] + bytearray(key))
       self.writeReg(REG_PACKETCONFIG2, 1)
     else:
       self.writeReg(REG_PACKETCONFIG2, 0)
