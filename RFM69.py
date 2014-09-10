@@ -225,7 +225,7 @@ class RFM69():
       if self.PAYLOADLEN > 66:
         self.PAYLOADLEN = 66
       self.TARGETID = self.spi.xfer([0])
-      if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR:
+      if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR):
         self.PAYLOADLEN = 0
         return
     self.DATALEN = self.PAYLOADLEN - 3
