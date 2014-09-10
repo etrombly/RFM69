@@ -9,7 +9,7 @@ class RFM69():
   def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 24):
 
     self.freqBand = freqBand
-    self.nodeID = nodeID
+    self.address = nodeID
     self.networkID = networkID
     self.isRFM69HW = isRFM69HW
     self.intPin = intPin
@@ -243,7 +243,7 @@ class RFM69():
         self.DATA += 0
 
       self.setMode(RF69_MODE_RX)
-    self.RSSI = readRSSI()
+    self.RSSI = self.readRSSI()
 
   def receiveBegin(self):
     pass
