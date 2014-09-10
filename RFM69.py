@@ -4,7 +4,10 @@ from RFM69registers import *
 import spidev
 
 class RFM69():
-  def __init__(self, freqBand, nodeID, networkID):
+  def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False):
+
+    self.isRFM69HW = isRFM69HW
+
     frfMSB = {RF69_315MHZ: RF_FRFMSB_315, RF69_433MHZ: RF_FRFMSB_433,
               RF69_868MHZ: RF_FRFMSB_868, RF69_915MHZ: RF_FRFMSB_915}
     frfMID = {RF69_315MHZ: RF_FRFMID_315, RF69_433MHZ: RF_FRFMID_433,
@@ -82,6 +85,7 @@ class RFM69():
       self.writeReg(value[0], value[1])
 
     self.encrypt(0)
+    setHighPower(False);
 
   def setFreqeuncy(self, FRF):
     pass
@@ -152,7 +156,14 @@ class RFM69():
     pass
 
   def setHighPower(self, onOff):
-    pass
+    if onOff:
+      self.writeReg(REG_OCP, RF_OCP_OFF)
+      #enable P1 & P2 amplifier stages
+      self.writeReg(REG_PALEVEL, (self.readReg(REG_PALEVEL) & 0x1F) | RF_PALEVEL_PA1_ON | RF_PALEVEL_PA2_ON)
+    else:
+      self.writeReg(REG_OCP, RF_OCP_ON)
+      #enable P0 only
+      writeReg(REG_PALEVEL, RF_PALEVEL_PA0_ON | RF_PALEVEL_PA1_OFF | RF_PALEVEL_PA2_OFF | powerLevel)
 
   def setHighPowerRegs(self, onOff):
     pass
