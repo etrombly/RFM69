@@ -213,7 +213,7 @@ class RFM69():
     else:
       self.spi.xfer([0x00])
 
-    self.spi.xfer(bytearray(buff))
+    self.spi.xfer(list(buff.encode("ascii")))
 
     self.setMode(RF69_MODE_TX)
     GPIO.wait_for_edge(self.intPin, GPIO.RISING)
