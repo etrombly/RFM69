@@ -83,58 +83,58 @@ class RFM69():
 
     self.encrypt(0)
 
-  def setFreqeuncy(FRF):
+  def setFreqeuncy(self, FRF):
     pass
 
-  def setMode(newMode):
+  def setMode(self, newMode):
     pass
 
-  def sleep():
+  def sleep(self):
     pass
 
-  def setAddress(addr):
+  def setAddress(self, addr):
     pass
 
-  def setPowerLevel(powerLevel):
+  def setPowerLevel(self, powerLevel):
     pass
 
-  def canSend():
+  def canSend(self):
     pass
 
-  def send(toAddress, buffer, bufferSize, requestACK):
+  def send(self, toAddress, buffer, bufferSize, requestACK):
     pass
 
-  def sendWithRetry(toAddress, buffer, bufferSize, retries, retryWaitTime):
+  def sendWithRetry(self, toAddress, buffer, bufferSize, retries, retryWaitTime):
     pass
 
-  def ACKRecieved(fromNodeID):
+  def ACKRecieved(self, fromNodeID):
     pass
 
-  def ACKRequested():
+  def ACKRequested(self):
     pass
 
-  def sendACK(buffer, bufferSize):
+  def sendACK(self, buffer, bufferSize):
     pass
 
-  def sendFrame(toAddress, buffer, bufferSize, requestACK, sendACK):
+  def sendFrame(self, toAddress, buffer, bufferSize, requestACK, sendACK):
     pass
 
-  def interruptHandler():
+  def interruptHandler(self):
     pass
 
-  def isr0():
+  def isr0(self):
     pass
 
-  def receiveBegin():
+  def receiveBegin(self):
     pass
 
-  def receiveDone():
+  def receiveDone(self):
     pass
 
-  def readRSSI(forceTrigger):
+  def readRSSI(self, forceTrigger):
     pass
 
-  def encrypt(key):
+  def encrypt(self, key):
     self.setMode(RF69_MODE_STANDBY)
     if key != 0 and len(key) == 16:
       self.spi.xfer2([REG_AESKEY1 | 0x80] + list(key))
@@ -142,26 +142,26 @@ class RFM69():
     else:
       self.writeReg(REG_PACKETCONFIG2, 0)
 
-  def readReg(addr):
+  def readReg(self, addr):
     return self.spi.xfer2([addr | 0x7F, 0])
 
-  def writeReg(addr, value):
+  def writeReg(self, addr, value):
     self.spi.xfer2([addr | 0x80, value])
 
-  def promiscuous(onOff):
+  def promiscuous(self, onOff):
     pass
 
-  def setHighPower(onOff):
+  def setHighPower(self, onOff):
     pass
 
-  def setHighPowerRegs(onOff):
+  def setHighPowerRegs(self, onOff):
     pass
 
-  def readAllRegs():
+  def readAllRegs(self):
     pass
 
-  def readTemperature(calFactor):
+  def readTemperature(self, calFactor):
     pass
 
-  def rcCalibration():
+  def rcCalibration(self):
     pass
