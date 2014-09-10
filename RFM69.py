@@ -230,25 +230,19 @@ class RFM69():
       if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR):
         self.PAYLOADLEN = 0
         return
-    self.DATALEN = self.PAYLOADLEN - 3
-    self.SENDERID = self.spi.xfer([0])
-    CTLbyte = self.spi.xfer([0])
+      self.DATALEN = self.PAYLOADLEN - 3
+      self.SENDERID = self.spi.xfer([0])
+      CTLbyte = self.spi.xfer([0])
+      self.ACK_RECEIVED = CTLbyte & 0x80
+      self.ACK_REQUESTED = CTLbyte & 0x40
 
-    print self.PAYLOADLEN
-    print self.TARGETID
-    print self.SENDERID
-    print self.CTLbyte
-    
-    self.ACK_RECEIVED = CTLbyte & 0x80
-    self.ACK_REQUESTED = CTLbyte & 0x40
+      self.DATA = self.spi.xfer([0 for i in range(0, self.DATALEN)])
 
-    self.DATA = self.spi.xfer([0 for i in range(0, self.DATALEN)])
+      if self.DATALEN < RF69_MAX_DATA_LEN:
+        #add null at end of string
+        self.DATA += 0
 
-    if self.DATALEN < RF69_MAX_DATA_LEN:
-      #add null at end of string
-      self.DATA += 0
-
-    self.setMode(RF69_MODE_RX)
+      self.setMode(RF69_MODE_RX)
     self.RSSI = readRSSI()
 
   def receiveBegin(self):
