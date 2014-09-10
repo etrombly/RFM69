@@ -2,15 +2,21 @@
 
 from RFM69registers import *
 import spidev
+import RPi.GPIO as GPIO
+import time
 
 class RFM69():
-  def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False):
+  def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 24):
 
     self.freqBand = freqBand
     self.nodeID = nodeID
     self.networkID = networkID
     self.isRFM69HW = isRFM69HW
+    self.intPin = intPin
     self.mode = ""
+
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(self.intPin, GPIO.IN)
 
     frfMSB = {RF69_315MHZ: RF_FRFMSB_315, RF69_433MHZ: RF_FRFMSB_433,
               RF69_868MHZ: RF_FRFMSB_868, RF69_915MHZ: RF_FRFMSB_915}
@@ -223,3 +229,7 @@ class RFM69():
 
   def rcCalibration(self):
     pass
+
+  def shutdown(self):
+    self.sleep()
+    GPIO.cleanup()
