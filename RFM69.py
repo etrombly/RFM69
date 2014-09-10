@@ -120,12 +120,12 @@ class RFM69():
     else:
       return
 
-  	# we are using packet mode, so this check is not really needed
+    # we are using packet mode, so this check is not really needed
     # but waiting for mode ready is necessary when going from sleep because the FIFO may not be immediately available from previous mode
-  	while self.mode == RF69_MODE_SLEEP and self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY == 0x00:
+    while self.mode == RF69_MODE_SLEEP and self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY == 0x00:
       pass
 
-  	self.mode = newMode;
+    self.mode = newMode;
 
   def sleep(self):
     pass
