@@ -251,8 +251,15 @@ class RFM69():
   def receiveDone(self):
     pass
 
-  def readRSSI(self, forceTrigger):
-    pass
+  def readRSSI(self, forceTrigger = False):
+    rssi = 0
+    if forceTrigger:
+      self.writeReg(REG_RSSICONFIG, RF_RSSI_START)
+      while self.readReg(REG_RSSICONFIG) & RF_RSSI_DONE == 0x00:
+        pass
+    rssi = self.readReg(REG_RSSIVALUE) * -1
+    rssi = rssi >> 1
+    return rssi
 
   def encrypt(self, key):
     self.setMode(RF69_MODE_STANDBY)
