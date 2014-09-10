@@ -85,7 +85,7 @@ class RFM69():
       self.writeReg(value[0], value[1])
 
     self.encrypt(0)
-    setHighPower(False);
+    self.setHighPower(False);
 
   def setFreqeuncy(self, FRF):
     pass
