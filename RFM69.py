@@ -143,7 +143,7 @@ class RFM69():
       self.writeReg(REG_PACKETCONFIG2, 0)
 
   def readReg(addr):
-    return self.spi.xfer2([addr | 0x7F. 0])
+    return self.spi.xfer2([addr | 0x7F, 0])
 
   def writeReg(addr, value):
     self.spi.xfer2([addr | 0x80, value])
