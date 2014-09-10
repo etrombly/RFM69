@@ -231,7 +231,7 @@ class RFM69():
         self.PAYLOADLEN = 0
         return
     self.DATALEN = self.PAYLOADLEN - 3
-    self.SENDERID = self.spi.xfer([0])[1]
+    self.SENDERID = self.spi.xfer([0])
     CTLbyte = self.spi.xfer([0])[1]
     self.ACK_RECEIVED = CTLbyte & 0x80
     self.ACK_REQUESTED = CTLbyte & 0x40
