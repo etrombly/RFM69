@@ -213,7 +213,7 @@ class RFM69():
     else:
       self.spi.xfer([0x00])
 
-    self.spi.write(list(buff))
+    self.spi.writebytes(list(buff))
 
     self.setMode(RF69_MODE_TX)
     GPIO.wait_for_edge(self.intPin, GPIO.RISING)
