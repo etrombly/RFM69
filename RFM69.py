@@ -156,17 +156,17 @@ class RFM69():
   def send(self, toAddress, buffer, requestACK):
     self.writeReg(REG_PACKETCONFIG2, (self.readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
     now = time.time()
-    while not self.canSend() and time.time() - now < RF69_CSMA_LIMIT_S:
+    while (not self.canSend()) and time.time() - now < RF69_CSMA_LIMIT_S:
       self.receiveDone()
     self.sendFrame(toAddress, buffer, requestACK, False)
 
-""" to increase the chance of getting a packet across, call this function instead of send
-    and it handles all the ACK requesting/retrying for you :)
-    The only twist is that you have to manually listen to ACK requests on the other side and send back the ACKs
-    The reason for the semi-automaton is that the lib is ingterrupt driven and
-    requires user action to read the received data and decide what to do with it
-    replies usually take only 5-8ms at 50kbps@915Mhz
-"""
+#    to increase the chance of getting a packet across, call this function instead of send
+#    and it handles all the ACK requesting/retrying for you :)
+#    The only twist is that you have to manually listen to ACK requests on the other side and send back the ACKs
+#    The reason for the semi-automaton is that the lib is ingterrupt driven and
+#    requires user action to read the received data and decide what to do with it
+#    replies usually take only 5-8ms at 50kbps@915Mhz
+
   def sendWithRetry(self, toAddress, buffer, retries, retryWaitTime):
     for i in range(0, retries):
       self.send(toAddress, buffer, True)
