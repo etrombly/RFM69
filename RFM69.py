@@ -115,11 +115,11 @@ class RFM69():
     if newMode == RF69_MODE_TX:
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_TRANSMITTER)
       if self.isRFM69HW:
-        self.setHighPowerRegs(true)
+        self.setHighPowerRegs(True)
     elif newMode == RF69_MODE_RX:
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_RECEIVER)
       if self.isRFM69HW:
-        self.setHighPowerRegs(false)
+        self.setHighPowerRegs(False)
     elif newMode == RF69_MODE_SYNTH:
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SYNTHESIZER)
     elif newMode == RF69_MODE_STANDBY:
