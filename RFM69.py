@@ -4,7 +4,6 @@ from RFM69registers import *
 import spidev
 import RPi.GPIO as GPIO
 import time
-import binascii
 
 class RFM69():
   def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 24):
@@ -214,7 +213,7 @@ class RFM69():
     else:
       self.spi.xfer([0x00])
 
-    self.spi.xfer([binascii.hexlify(i) for i in list(buff)])
+    self.spi.xfer([int(ord(i)) for i in list(buff)])
 
     self.setMode(RF69_MODE_TX)
     GPIO.wait_for_edge(self.intPin, GPIO.RISING)
@@ -265,7 +264,7 @@ class RFM69():
   def encrypt(self, key):
     self.setMode(RF69_MODE_STANDBY)
     if key != 0 and len(key) == 16:
-      self.spi.xfer([REG_AESKEY1 | 0x80] + [binascii.hexlify(i) for i in list(key)])
+      self.spi.xfer([REG_AESKEY1 | 0x80] + [int(ord(i)) for i in list(key)])
       self.writeReg(REG_PACKETCONFIG2, 1)
     else:
       self.writeReg(REG_PACKETCONFIG2, 0)
