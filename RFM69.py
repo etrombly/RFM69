@@ -223,16 +223,22 @@ class RFM69():
     if self.mode == RF69_MODE_RX and self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
       self.setMode(RF69_MODE_STANDBY)
       self.spi.transfer([REG_FIFO & 0x7f])
-      self.PAYLOADLEN = self.spi.xfer([0])[1]
+      self.PAYLOADLEN = self.spi.xfer([0])
       if self.PAYLOADLEN > 66:
         self.PAYLOADLEN = 66
-      self.TARGETID = self.spi.xfer([0])[1]
+      self.TARGETID = self.spi.xfer([0])
       if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR):
         self.PAYLOADLEN = 0
         return
     self.DATALEN = self.PAYLOADLEN - 3
     self.SENDERID = self.spi.xfer([0])
-    CTLbyte = self.spi.xfer([0])[1]
+    CTLbyte = self.spi.xfer([0])
+
+    print self.PAYLOADLEN
+    print self.TARGETID
+    print self.SENDERID
+    print self.CTLbyte
+    
     self.ACK_RECEIVED = CTLbyte & 0x80
     self.ACK_REQUESTED = CTLbyte & 0x40
 
