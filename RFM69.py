@@ -14,6 +14,7 @@ class RFM69():
     self.isRFM69HW = isRFM69HW
     self.intPin = intPin
     self.mode = ""
+    self.PAYLOADLEN = 0
 
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(self.intPin, GPIO.IN)
@@ -222,6 +223,7 @@ class RFM69():
     if self.mode == RF69_MODE_RX and self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
       self.setMode(RF69_MODE_STANDBY)
       self.spi.transfer([REG_FIFO & 0x7f])
+      self.PAYLOADLEN = self.spi.xfer([0])
       if self.PAYLOADLEN > 66:
         self.PAYLOADLEN = 66
       self.TARGETID = self.spi.xfer([0])
