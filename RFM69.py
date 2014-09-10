@@ -78,8 +78,8 @@ class RFM69():
       self.writeReg(REG_SYNCVALUE1, 0x55)
 
     #write config
-    for reg, value in self.CONFIG.iteritems():
-      self.writeReg(reg, value)
+    for value in self.CONFIG.values():
+      self.writeReg(value[0], value[1])
 
     self.encrypt(0)
 
