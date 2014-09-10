@@ -108,15 +108,15 @@ class RFM69():
       if self.isRFM69HW:
         self.setHighPowerRegs(true)
     elif newMode == RF69_MODE_RX:
-      self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_RECEIVER);
+      self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_RECEIVER)
       if self.isRFM69HW:
         self.setHighPowerRegs(false)
     elif newMode == RF69_MODE_SYNTH:
-      self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SYNTHESIZER);
+      self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SYNTHESIZER)
     elif newMode == RF69_MODE_STANDBY:
-      self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_STANDBY);
+      self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_STANDBY)
     elif newMode == RF69_MODE_SLEEP:
-      self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SLEEP);
+      self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SLEEP)
     else:
       return
 
@@ -128,16 +128,24 @@ class RFM69():
     self.mode = newMode;
 
   def sleep(self):
-    pass
+    self.setMode(RF69_MODE_SLEEP)
 
   def setAddress(self, addr):
-    pass
+    self.address = addr
+    self.writeReg(REG_NODEADRS, self.address)
 
   def setPowerLevel(self, powerLevel):
-    pass
+    if powerLevel > 31:
+      powerLevel = 31
+    self.powerLevel = powerLevel
+    self.writeReg(REG_PALEVEL, (readReg(REG_PALEVEL) & 0xE0) | self.powerLevel)
 
   def canSend(self):
-    pass
+    #if signal stronger than -100dBm is detected assume channel activity
+    if self.mode == RF69_MODE_RX and PAYLOADLEN == 0 and self.readRSSI() < CSMA_LIMIT:
+      self.setMode(RF69_MODE_STANDBY)
+      return True
+    return False
 
   def send(self, toAddress, buffer, bufferSize, requestACK):
     pass
