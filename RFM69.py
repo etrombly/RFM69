@@ -6,6 +6,9 @@ import spidev
 class RFM69():
   def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False):
 
+    self.freqBand = freqBand
+    self.nodeID = nodeID
+    self.networkID = networkID
     self.isRFM69HW = isRFM69HW
 
     frfMSB = {RF69_315MHZ: RF_FRFMSB_315, RF69_433MHZ: RF_FRFMSB_433,
@@ -85,7 +88,10 @@ class RFM69():
       self.writeReg(value[0], value[1])
 
     self.encrypt(0)
-    self.setHighPower(False);
+    self.setHighPower(self.isRFM69HW)
+    # Wait for ModeReady
+    while (self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00:
+      pass
 
   def setFreqeuncy(self, FRF):
     pass
