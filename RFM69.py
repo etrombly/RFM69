@@ -4,7 +4,7 @@ from RFM69registers import *
 import spidev
 
 class RFM69():
-  def __init__(freqBand, nodeID, networkID):
+  def __init__(self, freqBand, nodeID, networkID):
     frfMSB = {RF69_315MHZ: RF_FRFMSB_315, RF69_433MHZ: RF_FRFMSB_433,
               RF69_868MHZ: RF_FRFMSB_868, RF69_915MHZ: RF_FRFMSB_915}
     frfMID = {RF69_315MHZ: RF_FRFMID_315, RF69_433MHZ: RF_FRFMID_433,
