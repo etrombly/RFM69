@@ -100,6 +100,8 @@ class RFM69():
     while (self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00:
       pass
 
+    GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
+
   def setFreqeuncy(self, FRF):
     self.writeReg(REG_FRFMSB, FRF >> 16)
     self.writeReg(REG_FRFMID, FRF >> 8)
@@ -153,12 +155,12 @@ class RFM69():
       return True
     return False
 
-  def send(self, toAddress, buffer, requestACK):
+  def send(self, toAddress, buff, requestACK):
     self.writeReg(REG_PACKETCONFIG2, (self.readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
     now = time.time()
     while (not self.canSend()) and time.time() - now < RF69_CSMA_LIMIT_S:
       self.receiveDone()
-    self.sendFrame(toAddress, buffer, requestACK, False)
+    self.sendFrame(toAddress, buff, requestACK, False)
 
 #    to increase the chance of getting a packet across, call this function instead of send
 #    and it handles all the ACK requesting/retrying for you :)
@@ -167,9 +169,9 @@ class RFM69():
 #    requires user action to read the received data and decide what to do with it
 #    replies usually take only 5-8ms at 50kbps@915Mhz
 
-  def sendWithRetry(self, toAddress, buffer, retries, retryWaitTime):
+  def sendWithRetry(self, toAddress, buff, retries, retryWaitTime):
     for i in range(0, retries):
-      self.send(toAddress, buffer, True)
+      self.send(toAddress, buff, True)
       sentTime = time.time()
       while (time.time() - sentTime) * 1000 < retryWaitTime:
         if self.ACKReceived(toAddress):
@@ -184,19 +186,62 @@ class RFM69():
   def ACKRequested(self):
     return self.ACK_REQUESTED and self.TARGETID != RF69_BROADCAST_ADDR
 
-  def sendACK(self, buffer):
+  def sendACK(self, buff):
     while not self.canSend():
       self.receiveDone()
-    self.sendFrame(self.SENDERID, buffer, False, True)
+    self.sendFrame(self.SENDERID, buff, False, True)
 
-  def sendFrame(self, toAddress, buffer, requestACK, sendACK):
-    pass
+  def sendFrame(self, toAddress, buff, requestACK, sendACK):
+    #turn off receiver to prevent reception while filling fifo
+    self.setMode(RF69_MODE_STANDBY)
+    #wait for modeReady
+    while (self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00:
+      pass
+    # DIO0 is "Packet Sent"
+    self.writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_00)
+
+    if (len(buff) > RF69_MAX_DATA_LEN):
+      buff = buff[0:RF69_MAX_DATA_LEN]
+
+    self.spi.xfer([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.Address])
+
+    if sendACK:
+      self.spi.xfer([0x80])
+    elif requestACK:
+      self.spi.xfer([0x40])
+    else:
+      self.spi.xfer([0x00])
+
+    self.spi.xfer([list(buff)])
+
+    self.setMode(RF69_MODE_TX)
+    GPIO.wait_for_edge(self.intPin, GPIO.RISING)
+    self.setMode(RF69_MODE_STANDBY)
 
   def interruptHandler(self):
-    pass
+    if self.mode == RF69_MODE_RX and self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
+      self.setMode(RF69_MODE_STANDBY)
+      self.spi.transfer([REG_FIFO & 0x7f])
+      if self.PAYLOADLEN > 66:
+        self.PAYLOADLEN = 66
+      self.TARGETID = self.spi.xfer([0])
+      if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR:
+        self.PAYLOADLEN = 0
+        return
+    self.DATALEN = self.PAYLOADLEN - 3
+    self.SENDERID = self.spi.xfer([0])
+    CTLbyte = self.spi.xfer([0])
+    self.ACK_RECEIVED = CTLbyte & 0x80
+    self.ACK_REQUESTED = CTLbyte & 0x40
 
-  def isr0(self):
-    pass
+    self.DATA = self.spi.xfer([0 for i in range(0, self.DATALEN)])
+
+    if self.DATALEN < RF69_MAX_DATA_LEN:
+      #add null at end of string
+      self.DATA += 0
+
+    self.setMode(RF69_MODE_RX)
+    self.RSSI = readRSSI()
 
   def receiveBegin(self):
     pass
