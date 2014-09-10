@@ -137,16 +137,16 @@ class RFM69():
   def encrypt(self, key):
     self.setMode(RF69_MODE_STANDBY)
     if key != 0 and len(key) == 16:
-      self.spi.xfer2([REG_AESKEY1 | 0x80] + list(key))
+      self.spi.xfer([REG_AESKEY1 | 0x80] + list(key))
       self.writeReg(REG_PACKETCONFIG2, 1)
     else:
       self.writeReg(REG_PACKETCONFIG2, 0)
 
   def readReg(self, addr):
-    return self.spi.xfer2([addr | 0x7F, 0])
+    return self.spi.xfer([addr | 0x7F, 0])
 
   def writeReg(self, addr, value):
-    self.spi.xfer2([addr | 0x80, value])
+    self.spi.xfer([addr | 0x80, value])
 
   def promiscuous(self, onOff):
     pass
