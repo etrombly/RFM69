@@ -1069,3 +1069,22 @@ RF_TEMP1_ADCLOWPOWER_OFF = 0x00
 RF_DAGC_NORMAL = 0x00  # Reset value
 RF_DAGC_IMPROVED_LOWBETA1 = 0x20  #
 RF_DAGC_IMPROVED_LOWBETA0 = 0x30  # Recommended default
+
+#settings pulled from RFM69.h
+RF69_315MHZ = 31  # non trivial values to avoid misconfiguration
+RF69_433MHZ = 43
+RF69_868MHZ = 86
+RF69_915MHZ = 91
+
+RF69_MAX_DATA_LEN = 61 # to take advantage of the built in AES/CRC we want to limit the frame size to the internal FIFO size (66 bytes - 3 bytes overhead)
+
+CSMA_LIMIT = -90 # upper RX signal sensitivity threshold in dBm for carrier sense access
+RF69_MODE_SLEEP = 0 # XTAL OFF
+RF69_MODE_STANDBY = 1 # XTAL ON
+RF69_MODE_SYNTH	= 2 # PLL ON
+RF69_MODE_RX = 3 # RX MODE
+RF69_MODE_TX	= 4 # TX MODE
+
+COURSE_TEMP_COEF = -90 # puts the temperature reading in the ballpark, user can fine tune the returned value
+RF69_BROADCAST_ADDR = 255
+RF69_CSMA_LIMIT_MS = 1000
