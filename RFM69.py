@@ -320,7 +320,7 @@ class RFM69():
 
   def readAllRegs(self):
     results = []
-    for address in range(1, 0x5):
+    for address in range(1, 0x50):
       results.append([str(hex(address)), str(bin(self.readReg(address)))])
     return results
 
