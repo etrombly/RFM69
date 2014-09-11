@@ -340,5 +340,6 @@ class RFM69():
       pass
 
   def shutdown(self):
+    self.setHighPower(False)
     self.sleep()
     GPIO.cleanup()
