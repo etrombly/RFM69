@@ -216,9 +216,8 @@ class RFM69():
     self.spi.xfer([int(ord(i)) for i in list(buff)])
 
     self.setMode(RF69_MODE_TX)
-    GPIO.remove_event_detect(self.intPin)
+    GPIO.remove_event_detect(self)
     GPIO.wait_for_edge(self.intPin, GPIO.RISING)
-    GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
     self.setMode(RF69_MODE_STANDBY)
 
   def interruptHandler(self, pin):
@@ -248,10 +247,30 @@ class RFM69():
     self.RSSI = self.readRSSI()
 
   def receiveBegin(self):
-    pass
+    self.DATALEN = 0
+    self.SENDERID = 0
+    self.TARGETID = 0
+    self.PAYLOADLEN = 0
+    self.ACK_REQUESTED = 0
+    self.ACK_RECEIVED = 0
+    self.RSSI = 0
+    if (self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY):
+      # avoid RX deadlocks
+      self.writeReg(REG_PACKETCONFIG2, (self.readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
+    #set DIO0 to "PAYLOADREADY" in receive mode
+    self.writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_01)
+    self.setMode(RF69_MODE_RX)
 
   def receiveDone(self):
-    pass
+    if self.mode == RF69_MODE_RX and self.PAYLOADLEN > 0:
+      #enables interrupts
+      self.setMode(RF69_MODE_STANDBY)
+      return True
+    elif self.mode == RF69_MODE_RX:
+      # already in RX no payload yet
+      return False
+    self.receiveBegin()
+    return False
 
   def readRSSI(self, forceTrigger = False):
     rssi = 0
@@ -278,7 +297,7 @@ class RFM69():
     self.spi.xfer([addr | 0x80, value])
 
   def promiscuous(self, onOff):
-    pass
+    self.promiscuous = onOff
 
   def setHighPower(self, onOff):
     if onOff:
@@ -299,13 +318,25 @@ class RFM69():
       self.writeReg(REG_TESTPA2, 0x70)
 
   def readAllRegs(self):
-    pass
+    results = []
+    for address in range(1, 0x4F):
+      results.append([str(hex(address)), str(bin(self.readReg(address)))])
+    return results
 
   def readTemperature(self, calFactor):
-    pass
+    self.setMode(RF69_MODE_STANDBY)
+    self.writeReg(REG_TEMP1, RF_TEMP1_MEAS_START)
+    while self.readReg(REG_TEMP1) & RF_TEMP1_MEAS_RUNNING:
+      pass
+    # COURSE_TEMP_COEF puts reading in the ballpark, user can add additional correction
+    #'complement'corrects the slope, rising temp = rising val
+    return int(self.readReg(REG_TEMP2)) + COURSE_TEMP_COEF + calFactor
+
 
   def rcCalibration(self):
-    pass
+    self.writeReg(REG_OSC1, RF_OSC1_RCCAL_START)
+    while self.readReg(REG_OSC1) & RF_OSC1_RCCAL_DONE == 0x00:
+      pass
 
   def shutdown(self):
     self.sleep()
