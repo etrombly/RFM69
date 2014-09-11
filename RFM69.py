@@ -14,6 +14,7 @@ class RFM69():
     self.isRFM69HW = isRFM69HW
     self.intPin = intPin
     self.mode = ""
+    self.promiscuousMode = False
     self.PAYLOADLEN = 0
 
     GPIO.setmode(GPIO.BOARD)
@@ -151,7 +152,7 @@ class RFM69():
 
   def canSend(self):
     #if signal stronger than -100dBm is detected assume channel activity
-    if self.mode == RF69_MODE_RX and PAYLOADLEN == 0 and self.readRSSI() < CSMA_LIMIT:
+    if self.mode == RF69_MODE_RX and self.PAYLOADLEN == 0 and self.readRSSI() < CSMA_LIMIT:
       self.setMode(RF69_MODE_STANDBY)
       return True
     return False
@@ -297,7 +298,7 @@ class RFM69():
     self.spi.xfer([addr | 0x80, value])
 
   def promiscuous(self, onOff):
-    self.promiscuous = onOff
+    self.promiscuousMode = onOff
 
   def setHighPower(self, onOff):
     if onOff:
