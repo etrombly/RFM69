@@ -217,7 +217,7 @@ class RFM69():
     self.spi.xfer([int(ord(i)) for i in list(buff)])
 
     self.setMode(RF69_MODE_TX)
-    GPIO.remove_event_detect(self)
+    GPIO.remove_event_detect(self.intPin)
     GPIO.wait_for_edge(self.intPin, GPIO.RISING)
     self.setMode(RF69_MODE_STANDBY)
 
