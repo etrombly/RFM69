@@ -223,7 +223,7 @@ class RFM69():
   def interruptHandler(self, pin):
     if self.mode == RF69_MODE_RX and self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
       self.setMode(RF69_MODE_STANDBY)
-      self.spi.transfer([REG_FIFO & 0x7f])
+      self.spi.xfer([REG_FIFO & 0x7f])
       self.PAYLOADLEN = self.spi.xfer([0])
       if self.PAYLOADLEN > 66:
         self.PAYLOADLEN = 66
