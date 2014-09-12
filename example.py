@@ -21,5 +21,9 @@ print "setting encryption"
 test.encrypt("1234567891011121")
 print "sending blah to 0x03"
 test.send(0x03, "blah", True)
+print "reading"
+test.receiveBegin()
+while not test.receiveDone():
+  pass
 print "shutting down"
 test.shutdown()

@@ -102,7 +102,7 @@ class RFM69():
     while (self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00:
       pass
 
-    GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
+    GPIO.remove_event_detect(self.intPin)
 
   def setFreqeuncy(self, FRF):
     self.writeReg(REG_FRFMSB, FRF >> 16)
@@ -121,6 +121,7 @@ class RFM69():
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_RECEIVER)
       if self.isRFM69HW:
         self.setHighPowerRegs(False)
+      GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
     elif newMode == RF69_MODE_SYNTH:
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SYNTHESIZER)
     elif newMode == RF69_MODE_STANDBY:
@@ -240,10 +241,6 @@ class RFM69():
 
       self.DATA = self.spi.xfer([0 for i in range(0, self.DATALEN)])
 
-      if self.DATALEN < RF69_MAX_DATA_LEN:
-        #add null at end of string
-        self.DATA += 0
-
       self.setMode(RF69_MODE_RX)
     self.RSSI = self.readRSSI()
 
@@ -261,11 +258,12 @@ class RFM69():
     #set DIO0 to "PAYLOADREADY" in receive mode
     self.writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_01)
     self.setMode(RF69_MODE_RX)
+    GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
 
   def receiveDone(self):
     if self.mode == RF69_MODE_RX and self.PAYLOADLEN > 0:
-      #enables interrupts
       self.setMode(RF69_MODE_STANDBY)
+      GPIO.remove_event_detect(self.intPin)
       return True
     elif self.mode == RF69_MODE_RX:
       # already in RX no payload yet
