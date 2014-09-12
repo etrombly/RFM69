@@ -121,6 +121,7 @@ class RFM69():
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_RECEIVER)
       if self.isRFM69HW:
         self.setHighPowerRegs(False)
+      GPIO.remove_event_detect(self.intPin)
       GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
     elif newMode == RF69_MODE_SYNTH:
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SYNTHESIZER)
@@ -218,8 +219,8 @@ class RFM69():
     self.spi.xfer([int(ord(i)) for i in list(buff)])
 
     self.setMode(RF69_MODE_TX)
-    GPIO.wait_for_edge(self.intPin, GPIO.RISING)
     GPIO.remove_event_detect(self.intPin)
+    GPIO.wait_for_edge(self.intPin, GPIO.RISING)
     self.setMode(RF69_MODE_STANDBY)
 
   def interruptHandler(self, pin):
