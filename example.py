@@ -8,7 +8,7 @@ print "class initialized"
 print "reading all registers"
 results = test.readAllRegs()
 for result in results:
-  print result
+    print result
 print "Performing rcCalibration"
 test.rcCalibration()
 print "setting high power"
@@ -24,6 +24,7 @@ test.send(0x03, "blah", True)
 print "reading"
 test.receiveBegin()
 while not test.receiveDone():
-  pass
+    pass
+print test.DATA
 print "shutting down"
 test.shutdown()

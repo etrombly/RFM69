@@ -15,7 +15,14 @@ class RFM69():
     self.intPin = intPin
     self.mode = ""
     self.promiscuousMode = False
+    self.DATALEN = 0
+    self.SENDERID = 0
+    self.TARGETID = 0
     self.PAYLOADLEN = 0
+    self.ACK_REQUESTED = 0
+    self.ACK_RECEIVED = 0
+    self.RSSI = 0
+    self.DATA = []
 
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(self.intPin, GPIO.IN)
