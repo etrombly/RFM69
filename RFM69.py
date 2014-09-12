@@ -258,7 +258,6 @@ class RFM69():
     #set DIO0 to "PAYLOADREADY" in receive mode
     self.writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_01)
     self.setMode(RF69_MODE_RX)
-    GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
 
   def receiveDone(self):
     if self.mode == RF69_MODE_RX and self.PAYLOADLEN > 0:
