@@ -331,7 +331,7 @@ class RFM69():
       pass
     # COURSE_TEMP_COEF puts reading in the ballpark, user can add additional correction
     #'complement'corrects the slope, rising temp = rising val
-    return int(self.readReg(REG_TEMP2)) + COURSE_TEMP_COEF + calFactor
+    return int(~self.readReg(REG_TEMP2)) + COURSE_TEMP_COEF + calFactor
 
 
   def rcCalibration(self):
