@@ -6,7 +6,7 @@ import RPi.GPIO as GPIO
 import time
 
 class RFM69():
-  def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 24):
+  def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18):
 
     self.freqBand = freqBand
     self.address = nodeID
