@@ -5,7 +5,8 @@ RFM pin - Pi pin
 DIO0    - 18 (GPIO24)  
 MOSI    - 19  
 MISO    - 21  
-CLK     - 23  
+CLK     - 23
+NSS     - 24
 Ground  - 25  
 
 You can change the interrupt pin (GPIO24) in the class init.  
