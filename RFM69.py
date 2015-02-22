@@ -230,23 +230,28 @@ class RFM69():
     self.setMode(RF69_MODE_STANDBY)
 
   def interruptHandler(self, pin):
+    print "interrupt called"
     if self.mode == RF69_MODE_RX and self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
       self.setMode(RF69_MODE_STANDBY)
-      self.spi.xfer([REG_FIFO & 0x7f])
-      self.PAYLOADLEN = self.spi.xfer([0])
+      self.spi.xfer2([REG_FIFO & 0x7f])
+      self.PAYLOADLEN = self.spi.xfer2([0])[0]
+      print "payloadlen", self.PAYLOADLEN
       if self.PAYLOADLEN > 66:
         self.PAYLOADLEN = 66
-      self.TARGETID = self.spi.xfer([0])
+      self.TARGETID = self.spi.xfer2([0])[0]
+      print "targetid", self.TARGETID
       if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR):
         self.PAYLOADLEN = 0
         return
       self.DATALEN = self.PAYLOADLEN - 3
-      self.SENDERID = self.spi.xfer([0])
-      CTLbyte = self.spi.xfer([0])
+      self.SENDERID = self.spi.xfer2([0])[0]
+      print "senderid", self.SENDERID
+      CTLbyte = self.spi.xfer([0])[0]
+      print "ctlbyte", CTLbyte
       self.ACK_RECEIVED = CTLbyte & 0x80
       self.ACK_REQUESTED = CTLbyte & 0x40
 
-      self.DATA = self.spi.xfer([0 for i in range(0, self.DATALEN)])
+      self.DATA = self.spi.xfer2([0 for i in range(0, self.DATALEN)])
 
       self.setMode(RF69_MODE_RX)
     self.RSSI = self.readRSSI()
