@@ -214,14 +214,14 @@ class RFM69():
     if (len(buff) > RF69_MAX_DATA_LEN):
       buff = buff[0:RF69_MAX_DATA_LEN]
 
-    self.spi.xfer([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address])
+    self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address])
 
     if sendACK:
-      self.spi.xfer([0x80])
+      self.spi.xfer2([0x80])
     elif requestACK:
-      self.spi.xfer([0x40])
+      self.spi.xfer2([0x40])
     else:
-      self.spi.xfer([0x00])
+      self.spi.xfer2([0x00])
 
     self.spi.xfer([int(ord(i)) for i in list(buff)])
 
@@ -246,12 +246,12 @@ class RFM69():
       self.DATALEN = self.PAYLOADLEN - 3
       self.SENDERID = self.spi.xfer2([0])[0]
       print "senderid", self.SENDERID
-      CTLbyte = self.spi.xfer([0])[0]
+      CTLbyte = self.spi.xfer2([0])[0]
       print "ctlbyte", CTLbyte
       self.ACK_RECEIVED = CTLbyte & 0x80
       self.ACK_REQUESTED = CTLbyte & 0x40
 
-      self.DATA = self.spi.xfer2([0 for i in range(0, self.DATALEN)])
+      self.DATA = self.spi.xfer([0 for i in range(0, self.DATALEN)])
 
       self.setMode(RF69_MODE_RX)
     self.RSSI = self.readRSSI()
