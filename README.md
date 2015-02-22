@@ -16,5 +16,7 @@ prerequisites: RPi.GPIO and spidev
 if you are using newer firmware you'll need to get a newer spidev, the old one is no longer working:
 
 git clone https://github.com/Gadgetoid/py-spidev
+
 cd py-spidev
+
 sudo make install
