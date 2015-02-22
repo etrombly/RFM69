@@ -11,4 +11,10 @@ Ground  - 25
 
 You can change the interrupt pin (GPIO24) in the class init.  
 
-prerequisites: RPi.GPIO and spidev  
+prerequisites: RPi.GPIO and spidev
+
+if you are using newer firmware you'll need to get a newer spidev, the old one is no longer working:
+
+git clone https://github.com/Gadgetoid/py-spidev
+cd py-spidev
+sudo make install
