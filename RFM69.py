@@ -187,7 +187,7 @@ class RFM69():
       while (time.time() - sentTime) * 1000 < retryWaitTime:
         if self.ACKReceived(toAddress):
           return True
-      return False
+    return False
 
   def ACKRecieved(self, fromNodeID):
     if self.receiveDone():
