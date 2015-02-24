@@ -3,7 +3,7 @@
 from RFM69registers import *
 import spidev
 import RPi.GPIO as GPIO
-import time
+import datetime
 
 class RFM69():
   def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18):
@@ -168,8 +168,8 @@ class RFM69():
 
   def send(self, toAddress, buff, requestACK):
     self.writeReg(REG_PACKETCONFIG2, (self.readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
-    now = time.time()
-    while (not self.canSend()) and time.time() - now < RF69_CSMA_LIMIT_S:
+    now = datetime.datetime.now()
+    while (not self.canSend()) and (datetime.datetime.now() - now).total_seconds() < RF69_CSMA_LIMIT_S:
       self.receiveDone()
     self.sendFrame(toAddress, buff, requestACK, False)
 
@@ -180,12 +180,13 @@ class RFM69():
 #    requires user action to read the received data and decide what to do with it
 #    replies usually take only 5-8ms at 50kbps@915Mhz
 
-  def sendWithRetry(self, toAddress, buff, retries, retryWaitTime):
+  def sendWithRetry(self, toAddress, buff, retries = 3, retryWaitTime = 10):
     for i in range(0, retries):
       self.send(toAddress, buff, True)
-      sentTime = time.time()
-      while (time.time() - sentTime) * 1000 < retryWaitTime:
-        if self.ACKReceived(toAddress):
+      self.setMode(RF69_MODE_RX)
+      sentTime = datetime.datetime.now()
+      while (datetime.datetime.now() - sentTime).total_seconds() * 1000 < retryWaitTime:
+        if self.ACKRecieved(toAddress):
           return True
     return False
 
