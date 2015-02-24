@@ -15,6 +15,7 @@ class RFM69():
     self.intPin = intPin
     self.mode = ""
     self.promiscuousMode = False
+    self.DATASENT = False
     self.DATALEN = 0
     self.SENDERID = 0
     self.TARGETID = 0
@@ -110,6 +111,7 @@ class RFM69():
       pass
 
     GPIO.remove_event_detect(self.intPin)
+    GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
 
   def setFreqeuncy(self, FRF):
     self.writeReg(REG_FRFMSB, FRF >> 16)
@@ -120,7 +122,6 @@ class RFM69():
     if newMode == self.mode:
       return
 
-    GPIO.remove_event_detect(self.intPin)
     if newMode == RF69_MODE_TX:
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_TRANSMITTER)
       if self.isRFM69HW:
@@ -129,7 +130,6 @@ class RFM69():
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_RECEIVER)
       if self.isRFM69HW:
         self.setHighPowerRegs(False)
-      GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
     elif newMode == RF69_MODE_SYNTH:
       self.writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SYNTHESIZER)
     elif newMode == RF69_MODE_STANDBY:
@@ -214,44 +214,37 @@ class RFM69():
     if (len(buff) > RF69_MAX_DATA_LEN):
       buff = buff[0:RF69_MAX_DATA_LEN]
 
-    self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address])
-
+    ack = 0
     if sendACK:
-      self.spi.xfer2([0x80])
+      ack = 0x80
     elif requestACK:
-      self.spi.xfer2([0x40])
-    else:
-      self.spi.xfer2([0x00])
+      ack = 0x40
 
-    self.spi.xfer([int(ord(i)) for i in list(buff)])
+    self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + [int(ord(i)) for i in list(buff)])
 
     self.setMode(RF69_MODE_TX)
-    GPIO.wait_for_edge(self.intPin, GPIO.RISING)
+    while not self.DATASENT:
+      pass
+    self.DATASENT = False
     self.setMode(RF69_MODE_STANDBY)
 
   def interruptHandler(self, pin):
-    print "interrupt called"
+    if self.mode == RF69_MODE_TX:
+      self.DATASENT = True
+      return
     if self.mode == RF69_MODE_RX and self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
       self.setMode(RF69_MODE_STANDBY)
-      self.spi.xfer2([REG_FIFO & 0x7f])
-      self.PAYLOADLEN = self.spi.xfer2([0])[0]
-      print "payloadlen", self.PAYLOADLEN
+      self.PAYLOADLEN, self.TARGETID, self.SENDERID, CTLbyte = self.spi.xfer2([REG_FIFO & 0x7f,0,0,0,0])[1:]
       if self.PAYLOADLEN > 66:
         self.PAYLOADLEN = 66
-      self.TARGETID = self.spi.xfer2([0])[0]
-      print "targetid", self.TARGETID
       if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR):
         self.PAYLOADLEN = 0
         return
       self.DATALEN = self.PAYLOADLEN - 3
-      self.SENDERID = self.spi.xfer2([0])[0]
-      print "senderid", self.SENDERID
-      CTLbyte = self.spi.xfer2([0])[0]
-      print "ctlbyte", CTLbyte
       self.ACK_RECEIVED = CTLbyte & 0x80
       self.ACK_REQUESTED = CTLbyte & 0x40
 
-      self.DATA = self.spi.xfer([0 for i in range(0, self.DATALEN)])
+      self.DATA = self.spi.xfer2([REG_FIFO & 0x7f] + [0 for i in range(0, self.DATALEN)])[1:]
 
       self.setMode(RF69_MODE_RX)
     self.RSSI = self.readRSSI()
@@ -274,7 +267,6 @@ class RFM69():
   def receiveDone(self):
     if self.mode == RF69_MODE_RX and self.PAYLOADLEN > 0:
       self.setMode(RF69_MODE_STANDBY)
-      GPIO.remove_event_detect(self.intPin)
       return True
     elif self.mode == RF69_MODE_RX:
       # already in RX no payload yet

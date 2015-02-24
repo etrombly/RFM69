@@ -23,10 +23,13 @@ test.send(2, "blah", False)
 print "sending blah to 2"
 test.send(2, "blah", True)
 print "reading"
-test.receiveBegin()
-while not test.receiveDone():
-    pass
-for letter in test.DATA:
-    print chr(letter)
+while True:
+    test.receiveBegin()
+    while not test.receiveDone():
+        pass
+    if test.ACKRequested():
+        print "sending ack"
+        test.sendACK("ok")
+    print "".join([chr(letter) for letter in test.DATA])
 print "shutting down"
 test.shutdown()
