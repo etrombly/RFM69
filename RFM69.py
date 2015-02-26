@@ -224,11 +224,16 @@ class RFM69():
             ack = 0x80
         elif requestACK:
             ack = 0x40
-        self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + [int(ord(i)) for i in list(buff)])
+        if isinstance(buffer, basestring):
+            self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + [int(ord(i)) for i in list(buff)])
+        else:
+            self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + buff)
 
+        startTime = datetime.datetime.now()
         self.setMode(RF69_MODE_TX)
         while not self.DATASENT:
-            pass
+            if (datetime.datetime.now() - startTime).total_seconds() > 1.0:
+                break
         self.DATASENT = False
         self.setMode(RF69_MODE_STANDBY)
 
@@ -336,7 +341,7 @@ class RFM69():
             pass
         # COURSE_TEMP_COEF puts reading in the ballpark, user can add additional correction
         #'complement'corrects the slope, rising temp = rising val
-        return int(~self.readReg(REG_TEMP2)) + COURSE_TEMP_COEF + calFactor
+        return (int(~self.readReg(REG_TEMP2)) * -1) + COURSE_TEMP_COEF + calFactor
 
 
     def rcCalibration(self):

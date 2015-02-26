@@ -3,9 +3,9 @@
 import RFM69
 from RFM69registers import *
 import datetime
+import time
 
 test = RFM69.RFM69(RF69_915MHZ, 1, 1, True)
-test.promiscuous(True)
 print "class initialized"
 print "reading all registers"
 results = test.readAllRegs()
@@ -26,10 +26,9 @@ print "reading"
 while True:
     test.receiveBegin()
     while not test.receiveDone():
-        pass
+        time.sleep(.1)
+    print "%s from %s RSSI:%s" % ("".join([chr(letter) for letter in test.DATA]), test.SENDERID, test.RSSI)
     if test.ACKRequested():
-        print "sending ack"
         test.sendACK()
-    print "".join([chr(letter) for letter in test.DATA])
 print "shutting down"
 test.shutdown()
