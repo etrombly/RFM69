@@ -1,4 +1,4 @@
-#!/usr/bin/env/python
+#!/usr/bin/env/python2
 
 from RFM69registers import *
 import spidev
@@ -224,7 +224,7 @@ class RFM69():
             ack = 0x80
         elif requestACK:
             ack = 0x40
-        if isinstance(buffer, basestring):
+        if isinstance(buff, basestring):
             self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + [int(ord(i)) for i in list(buff)])
         else:
             self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + buff)
