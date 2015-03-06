@@ -160,7 +160,7 @@ class RFM69(object):
         if powerLevel > 31:
             powerLevel = 31
         self.powerLevel = powerLevel
-        self.writeReg(REG_PALEVEL, (readReg(REG_PALEVEL) & 0xE0) | self.powerLevel)
+        self.writeReg(REG_PALEVEL, (self.readReg(REG_PALEVEL) & 0xE0) | self.powerLevel)
 
     def canSend(self):
         #if signal stronger than -100dBm is detected assume channel activity
