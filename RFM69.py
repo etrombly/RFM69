@@ -5,7 +5,7 @@ import spidev
 import RPi.GPIO as GPIO
 import datetime
 
-class RFM69():
+class RFM69(object):
     def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18):
 
         self.freqBand = freqBand
@@ -160,7 +160,7 @@ class RFM69():
         if powerLevel > 31:
             powerLevel = 31
         self.powerLevel = powerLevel
-        self.writeReg(REG_PALEVEL, (readReg(REG_PALEVEL) & 0xE0) | self.powerLevel)
+        self.writeReg(REG_PALEVEL, (self.readReg(REG_PALEVEL) & 0xE0) | self.powerLevel)
 
     def canSend(self):
         #if signal stronger than -100dBm is detected assume channel activity
@@ -234,8 +234,8 @@ class RFM69():
         while not self.DATASENT:
             if (datetime.datetime.now() - startTime).total_seconds() > 1.0:
                 break
+        self.setMode(RF69_MODE_RX)
         self.DATASENT = False
-        self.setMode(RF69_MODE_STANDBY)
 
     def interruptHandler(self, pin):
         if self.mode == RF69_MODE_TX:
