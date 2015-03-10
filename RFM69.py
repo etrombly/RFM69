@@ -3,7 +3,7 @@
 from RFM69registers import *
 import spidev
 import RPi.GPIO as GPIO
-import datetime
+import time
 
 class RFM69(object):
     def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18):
@@ -13,6 +13,7 @@ class RFM69(object):
         self.networkID = networkID
         self.isRFM69HW = isRFM69HW
         self.intPin = intPin
+        self.intLock = False
         self.mode = ""
         self.promiscuousMode = False
         self.DATASENT = False
@@ -163,16 +164,19 @@ class RFM69(object):
         self.writeReg(REG_PALEVEL, (self.readReg(REG_PALEVEL) & 0xE0) | self.powerLevel)
 
     def canSend(self):
+        if self.mode == RF69_MODE_STANDBY:
+            self.receiveBegin()
+            return True
         #if signal stronger than -100dBm is detected assume channel activity
-        if self.mode == RF69_MODE_RX and self.PAYLOADLEN == 0 and self.readRSSI() < CSMA_LIMIT:
+        elif self.mode == RF69_MODE_RX and self.PAYLOADLEN == 0 and self.readRSSI() < CSMA_LIMIT:
             self.setMode(RF69_MODE_STANDBY)
             return True
         return False
 
     def send(self, toAddress, buff = "", requestACK = False):
         self.writeReg(REG_PACKETCONFIG2, (self.readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
-        now = datetime.datetime.now()
-        while (not self.canSend()) and (datetime.datetime.now() - now).total_seconds() < RF69_CSMA_LIMIT_S:
+        now = time.time()
+        while (not self.canSend()) and time.time() - now < RF69_CSMA_LIMIT_S:
             self.receiveDone()
         self.sendFrame(toAddress, buff, requestACK, False)
 
@@ -186,14 +190,13 @@ class RFM69(object):
     def sendWithRetry(self, toAddress, buff = "", retries = 3, retryWaitTime = 10):
         for i in range(0, retries):
             self.send(toAddress, buff, True)
-            self.setMode(RF69_MODE_RX)
-            sentTime = datetime.datetime.now()
-            while (datetime.datetime.now() - sentTime).total_seconds() * 1000 < retryWaitTime:
-                if self.ACKRecieved(toAddress):
+            sentTime = time.time()
+            while (time.time() - sentTime) * 1000 < retryWaitTime:
+                if self.ACKReceived(toAddress):
                     return True
         return False
 
-    def ACKRecieved(self, fromNodeID):
+    def ACKReceived(self, fromNodeID):
         if self.receiveDone():
             return (self.SENDERID == fromNodeID or fromNodeID == RF69_BROADCAST_ADDR) and self.ACK_RECEIVED
         return False
@@ -229,18 +232,17 @@ class RFM69(object):
         else:
             self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + buff)
 
-        startTime = datetime.datetime.now()
+        startTime = time.time()
+        self.DATASENT = False
         self.setMode(RF69_MODE_TX)
         while not self.DATASENT:
-            if (datetime.datetime.now() - startTime).total_seconds() > 1.0:
+            if time.time() - startTime > 1.0:
                 break
         self.setMode(RF69_MODE_RX)
-        self.DATASENT = False
 
     def interruptHandler(self, pin):
-        if self.mode == RF69_MODE_TX:
-            self.DATASENT = True
-            return
+        self.intLock = True
+        self.DATASENT = True
         if self.mode == RF69_MODE_RX and self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
             self.setMode(RF69_MODE_STANDBY)
             self.PAYLOADLEN, self.TARGETID, self.SENDERID, CTLbyte = self.spi.xfer2([REG_FIFO & 0x7f,0,0,0,0])[1:]
@@ -255,10 +257,12 @@ class RFM69(object):
 
             self.DATA = self.spi.xfer2([REG_FIFO & 0x7f] + [0 for i in range(0, self.DATALEN)])[1:]
 
-            self.setMode(RF69_MODE_RX)
-        self.RSSI = self.readRSSI()
+            self.RSSI = self.readRSSI()
+        self.intLock = False
 
     def receiveBegin(self):
+        while self.intLock:
+            time.sleep(.1)
         self.DATALEN = 0
         self.SENDERID = 0
         self.TARGETID = 0
@@ -274,7 +278,7 @@ class RFM69(object):
         self.setMode(RF69_MODE_RX)
 
     def receiveDone(self):
-        if self.mode == RF69_MODE_RX and self.PAYLOADLEN > 0:
+        if (self.mode == RF69_MODE_RX or self.mode == RF69_MODE_STANDBY) and self.PAYLOADLEN > 0:
             self.setMode(RF69_MODE_STANDBY)
             return True
         elif self.mode == RF69_MODE_RX:
