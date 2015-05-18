@@ -5,7 +5,7 @@ RFM pin - Pi pin
 DIO0    - 18 (GPIO24)  
 MOSI    - 19  
 MISO    - 21  
-CLK     - 23  
+CLK     - 23  (=SCK)
 NSS     - 24  
 Ground  - 25  
 
