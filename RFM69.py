@@ -250,6 +250,7 @@ class RFM69(object):
                 self.PAYLOADLEN = 66
             if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR):
                 self.PAYLOADLEN = 0
+                self.intLock = False
                 return
             self.DATALEN = self.PAYLOADLEN - 3
             self.ACK_RECEIVED = CTLbyte & 0x80
