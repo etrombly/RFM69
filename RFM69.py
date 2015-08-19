@@ -204,8 +204,7 @@ class RFM69(object):
     def ACKRequested(self):
         return self.ACK_REQUESTED and self.TARGETID != RF69_BROADCAST_ADDR
 
-    def sendACK(self, buff = ""):
-        toAddress = self.SENDERID
+    def sendACK(self, toAddress, buff = ""):
         while not self.canSend():
             self.receiveDone()
         self.sendFrame(toAddress, buff, False, True)
@@ -250,6 +249,7 @@ class RFM69(object):
                 self.PAYLOADLEN = 66
             if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR):
                 self.PAYLOADLEN = 0
+                self.intLock = False
                 return
             self.DATALEN = self.PAYLOADLEN - 3
             self.ACK_RECEIVED = CTLbyte & 0x80
