@@ -301,9 +301,9 @@ class RFM69(object):
         self.setMode(RF69_MODE_STANDBY)
         if key != 0 and len(key) == 16:
             self.spi.xfer([REG_AESKEY1 | 0x80] + [int(ord(i)) for i in list(key)])
-            self.writeReg(REG_PACKETCONFIG2, 1)
+            self.writeReg(REG_PACKETCONFIG2,(self.readReg(REG_PACKETCONFIG2) & 0xFE) | RF_PACKET2_AES_ON)
         else:
-            self.writeReg(REG_PACKETCONFIG2, 0)
+            self.writeReg(REG_PACKETCONFIG2,(self.readReg(REG_PACKETCONFIG2) & 0xFE) | RF_PACKET2_AES_OFF)
 
     def readReg(self, addr):
         return self.spi.xfer([addr & 0x7F, 0])[1]
