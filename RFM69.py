@@ -155,6 +155,7 @@ class RFM69(object):
         self.writeReg(REG_NODEADRS, self.address)
 
     def setNetwork(self, networkID):
+        self.networkID = networkID
         self.writeReg(REG_SYNCVALUE2, networkID)
 
     def setPowerLevel(self, powerLevel):
