@@ -1,4 +1,4 @@
-#!/usr/bin/env/python2
+#!/usr/bin/env python2
 
 from RFM69registers import *
 import spidev
