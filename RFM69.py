@@ -205,7 +205,8 @@ class RFM69(object):
     def ACKRequested(self):
         return self.ACK_REQUESTED and self.TARGETID != RF69_BROADCAST_ADDR
 
-    def sendACK(self, toAddress, buff = ""):
+    def sendACK(self, toAddress = 0, buff = ""):
+        toAddress = toAddress if toAddress > 0 else self.SENDERID
         while not self.canSend():
             self.receiveDone()
         self.sendFrame(toAddress, buff, False, True)
