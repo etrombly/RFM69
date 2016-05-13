@@ -242,7 +242,6 @@ class RFM69(object):
         self.setMode(RF69_MODE_RX)
 
     def interruptHandler(self, pin):
-        print "CALL BACK"
         self.intLock = True
         self.DATASENT = True
         if self.mode == RF69_MODE_RX and self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
@@ -266,7 +265,6 @@ class RFM69(object):
     def receiveBegin(self):
 
         while self.intLock:
-            print "waiting for intlock"
             time.sleep(.1)
         self.DATALEN = 0
         self.SENDERID = 0
@@ -285,13 +283,14 @@ class RFM69(object):
     def receiveDone(self):
         if (self.mode == RF69_MODE_RX or self.mode == RF69_MODE_STANDBY) and self.PAYLOADLEN > 0:
             self.setMode(RF69_MODE_STANDBY)
-            print "{0:b}".format(self.readReg(REG_IRQFLAGS1))
             return True
         if self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_TIMEOUT:
+            # https://github.com/russss/rfm69-python/blob/master/rfm69/rfm69.py#L112
+            # Russss figured out that if you leave alone long enough it times out
+            # tell it to stop being silly and listen for more packets
             self.writeReg(REG_PACKETCONFIG2, (self.readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
         elif self.mode == RF69_MODE_RX:
             # already in RX no payload yet
-            print "{0:b}".format(self.readReg(REG_IRQFLAGS1))
             return False
         self.receiveBegin()
         return False
