@@ -263,6 +263,7 @@ class RFM69(object):
         self.intLock = False
 
     def receiveBegin(self):
+
         while self.intLock:
             time.sleep(.1)
         self.DATALEN = 0
@@ -283,6 +284,11 @@ class RFM69(object):
         if (self.mode == RF69_MODE_RX or self.mode == RF69_MODE_STANDBY) and self.PAYLOADLEN > 0:
             self.setMode(RF69_MODE_STANDBY)
             return True
+        if self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_TIMEOUT:
+            # https://github.com/russss/rfm69-python/blob/master/rfm69/rfm69.py#L112
+            # Russss figured out that if you leave alone long enough it times out
+            # tell it to stop being silly and listen for more packets
+            self.writeReg(REG_PACKETCONFIG2, (self.readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
         elif self.mode == RF69_MODE_RX:
             # already in RX no payload yet
             return False
