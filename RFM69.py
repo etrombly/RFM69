@@ -1,4 +1,4 @@
-#!/usr/bin/env/python2
+#!/usr/bin/env python2
 
 from RFM69registers import *
 import spidev
@@ -155,6 +155,7 @@ class RFM69(object):
         self.writeReg(REG_NODEADRS, self.address)
 
     def setNetwork(self, networkID):
+        self.networkID = networkID
         self.writeReg(REG_SYNCVALUE2, networkID)
 
     def setPowerLevel(self, powerLevel):
@@ -204,7 +205,8 @@ class RFM69(object):
     def ACKRequested(self):
         return self.ACK_REQUESTED and self.TARGETID != RF69_BROADCAST_ADDR
 
-    def sendACK(self, toAddress, buff = ""):
+    def sendACK(self, toAddress = 0, buff = ""):
+        toAddress = toAddress if toAddress > 0 else self.SENDERID
         while not self.canSend():
             self.receiveDone()
         self.sendFrame(toAddress, buff, False, True)
@@ -261,6 +263,7 @@ class RFM69(object):
         self.intLock = False
 
     def receiveBegin(self):
+
         while self.intLock:
             time.sleep(.1)
         self.DATALEN = 0
@@ -281,6 +284,11 @@ class RFM69(object):
         if (self.mode == RF69_MODE_RX or self.mode == RF69_MODE_STANDBY) and self.PAYLOADLEN > 0:
             self.setMode(RF69_MODE_STANDBY)
             return True
+        if self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_TIMEOUT:
+            # https://github.com/russss/rfm69-python/blob/master/rfm69/rfm69.py#L112
+            # Russss figured out that if you leave alone long enough it times out
+            # tell it to stop being silly and listen for more packets
+            self.writeReg(REG_PACKETCONFIG2, (self.readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
         elif self.mode == RF69_MODE_RX:
             # already in RX no payload yet
             return False
@@ -301,9 +309,9 @@ class RFM69(object):
         self.setMode(RF69_MODE_STANDBY)
         if key != 0 and len(key) == 16:
             self.spi.xfer([REG_AESKEY1 | 0x80] + [int(ord(i)) for i in list(key)])
-            self.writeReg(REG_PACKETCONFIG2, 1)
+            self.writeReg(REG_PACKETCONFIG2,(self.readReg(REG_PACKETCONFIG2) & 0xFE) | RF_PACKET2_AES_ON)
         else:
-            self.writeReg(REG_PACKETCONFIG2, 0)
+            self.writeReg(REG_PACKETCONFIG2,(self.readReg(REG_PACKETCONFIG2) & 0xFE) | RF_PACKET2_AES_OFF)
 
     def readReg(self, addr):
         return self.spi.xfer([addr & 0x7F, 0])[1]
