@@ -8,6 +8,8 @@ import time
 NODE=2
 NET=1
 KEY="1234567891011121"
+TIMEOUT=3
+TOSLEEP=0.1
 
 radio = RFM69.RFM69(RF69_915MHZ, NODE, NET, True)
 print "class initialized"
@@ -43,8 +45,13 @@ while True:
 
     print "starting recv..."
     radio.receiveBegin()
+    timedOut=0
     while not radio.receiveDone():
-        time.sleep(1)
+        timedOut+=TOSLEEP
+        time.sleep(TOSLEEP)
+        if timedOut > TIMEOUT:
+            print "timed out waiting for recv"
+            break
 
     print "end recv..."
     print " ### %s from %s RSSI:%s " % ("".join([chr(letter) for letter in radio.DATA]), radio.SENDERID, radio.RSSI)
