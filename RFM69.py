@@ -6,7 +6,7 @@ import RPi.GPIO as GPIO
 import time
 
 class RFM69(object):
-    def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18, rstPin = 29):
+    def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18, rstPin = 29, spiBus = 0, spiDevice = 0):
 
         self.freqBand = freqBand
         self.address = nodeID
@@ -14,6 +14,8 @@ class RFM69(object):
         self.isRFM69HW = isRFM69HW
         self.intPin = intPin
         self.rstPin = rstPin
+        self.spiBus = spiBus
+        self.spiDevice = spiDevice
         self.intLock = False
         self.mode = ""
         self.promiscuousMode = False
@@ -94,7 +96,7 @@ class RFM69(object):
 
         #initialize SPI
         self.spi = spidev.SpiDev()
-        self.spi.open(0, 0)
+        self.spi.open(self.spiBus, self.spiDevice)
         self.spi.max_speed_hz = 4000000
 
         # Hard reset the RFM module
