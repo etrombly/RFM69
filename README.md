@@ -8,6 +8,7 @@ MISO    - 21
 CLK     - 23  (=SCK)
 NSS     - 24  
 Ground  - 25  
+RESET   - 29
 
 You can change the interrupt pin (GPIO24) in the class init.  
 

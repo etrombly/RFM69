@@ -6,13 +6,16 @@ import RPi.GPIO as GPIO
 import time
 
 class RFM69(object):
-    def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18):
+    def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18, rstPin = 29, spiBus = 0, spiDevice = 0):
 
         self.freqBand = freqBand
         self.address = nodeID
         self.networkID = networkID
         self.isRFM69HW = isRFM69HW
         self.intPin = intPin
+        self.rstPin = rstPin
+        self.spiBus = spiBus
+        self.spiDevice = spiDevice
         self.intLock = False
         self.mode = ""
         self.promiscuousMode = False
@@ -28,6 +31,7 @@ class RFM69(object):
 
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.intPin, GPIO.IN)
+        GPIO.setup(self.rstPin, GPIO.OUT)
 
         frfMSB = {RF69_315MHZ: RF_FRFMSB_315, RF69_433MHZ: RF_FRFMSB_433,
                   RF69_868MHZ: RF_FRFMSB_868, RF69_915MHZ: RF_FRFMSB_915}
@@ -89,10 +93,17 @@ class RFM69(object):
           0x6F: [REG_TESTDAGC, RF_DAGC_IMPROVED_LOWBETA0],
           0x00: [255, 0]
         }
+
         #initialize SPI
         self.spi = spidev.SpiDev()
-        self.spi.open(0, 0)
+        self.spi.open(self.spiBus, self.spiDevice)
         self.spi.max_speed_hz = 4000000
+
+        # Hard reset the RFM module
+        GPIO.output(self.rstPin, GPIO.HIGH);
+        time.sleep(0.1)
+        GPIO.output(self.rstPin, GPIO.LOW);
+        time.sleep(0.1)
 
         #verify chip is syncing?
         while self.readReg(REG_SYNCVALUE1) != 0xAA:
