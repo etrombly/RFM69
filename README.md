@@ -8,7 +8,7 @@ This is a port of the RFM69 library for arduino from https://github.com/LowPower
 
 # Hardware setup
 
-Attach the RFM69 as follows:
+Attach the RFM69 as follows (see https://pinout.xyz/):
 
 | RFM pin | Pi pin  
 | ------- |-------
