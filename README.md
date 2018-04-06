@@ -1,13 +1,10 @@
 # Main repo
-
-* https://github.com/etrombly/RFM69
+This Repo is adapted form https://github.com/etrombly/RFM69. The examples have been updated and the library is now Python 3.
 
 # Description
-
-This is a port of the RFM69 library for arduino from https://github.com/LowPowerLab/RFM69 to python for raspberry pi.
+This is a port of the RFM69 library for Arduino from https://github.com/LowPowerLab/RFM69 to python for raspberry pi.
 
 # Hardware setup
-
 Attach the RFM69 as follows:
 
 | RFM pin | Pi pin  
@@ -19,15 +16,14 @@ Attach the RFM69 as follows:
 | CLK     | 23  
 | NSS     | 24  
 | Ground  | 25  
-| RESET   | 28
+| RESET   | 29
 
 You can change the interrupt pin (GPIO24) in the class init.
-
 Remember to choose correct frequency for your hardware (315, 433, 868 or 915 MHz).
 
-# Prerequisites
-
-RPi.GPIO and spidev
+# Dependancies
+* ```pip install RPi.GPIO```
+* ```pip install spidev```
 
 If you are using newer firmware you'll need to get a newer spidev, the old one is no longer working:
 
