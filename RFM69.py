@@ -1,15 +1,16 @@
-#!/usr/bin/env python2
-
 from RFM69registers import *
 import spidev
 import RPi.GPIO as GPIO
 import time
+from six import string_types
 
-from past.builtins import basestring
+class RFM69Radio(object):
 
-class RFM69(object):
+    FREQ_315MHZ = RF69_315MHZ
+    FREQ_433MHZ = RF69_433MHZ
+    FREQ_915MHZ = RF69_915MHZ
+
     def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18, rstPin = 28, spiBus = 0, spiDevice = 0):
-
         self.freqBand = freqBand
         self.address = nodeID
         self.networkID = networkID
@@ -241,7 +242,7 @@ class RFM69(object):
             ack = 0x80
         elif requestACK:
             ack = 0x40
-        if isinstance(buff, basestring):
+        if isinstance(buff, string_types):
             self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + [int(ord(i)) for i in list(buff)])
         else:
             self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + buff)
