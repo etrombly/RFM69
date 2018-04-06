@@ -1,20 +1,20 @@
-# =============================================================================
-# Listen to RFM69 Radio on Raspberry PI and Asynchronously forward to 
-# RESTful API
-# =============================================================================
+# The next two lines are just to make the examples work in this directory for now
+import sys
+sys.path.append("../")
+# --------------------
 
 import signal
 import sys, json, time, string, datetime
 import asyncio
 from aiohttp import ClientSession
-import RFM69
+from RFM69 import RFM69Radio
 from RFM69registers import RF69_433MHZ 
 
-loop = None
+loop  = None
 radio = None
 
 def init_radio(node_id=1, network=100, high_power=False, interrupt_pin=18, reset_pin=29):
-    radio = RFM69.RFM69(RF69_433MHZ, node_id, network, high_power, interrupt_pin, reset_pin)
+    radio = RFM69Radio(RFM69Radio.FREQ_433MHZ, node_id, network, high_power, interrupt_pin, reset_pin)
     print ("Calibrating")
     radio.rcCalibration()
     print ("Setting high power to False - RPI can't supply enough current for high power")
