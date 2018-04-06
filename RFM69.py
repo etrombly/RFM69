@@ -5,6 +5,8 @@ import spidev
 import RPi.GPIO as GPIO
 import time
 
+from past.builtins import basestring
+
 class RFM69(object):
     def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18, rstPin = 28, spiBus = 0, spiDevice = 0):
 
