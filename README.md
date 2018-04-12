@@ -8,18 +8,18 @@ This is a port of the RFM69 library for arduino from https://github.com/LowPower
 
 # Hardware setup
 
-Attach the RFM69 as follows:
+Attach the RFM69 as follows (see https://pinout.xyz/):
 
 | RFM pin | Pi pin  
 | ------- |-------
 | 3v3     | 17  
 | DIO0    | 18 (GPIO24)  
-| MOSI    | 19  
-| MISO    | 21  
-| CLK     | 23  
-| NSS     | 24  
-| Ground  | 25  
-| RESET   | 28
+| MOSI    | 19 (BCM10)
+| MISO    | 21 (BCM9) 
+| CLK     | 23 (BCM11)
+| NSS     | 24 (BCM8)
+| Ground  | 25
+| RESET   | 26 (BCM7)
 
 You can change the interrupt pin (GPIO24) in the class init.
 
