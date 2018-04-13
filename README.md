@@ -19,7 +19,7 @@ Attach the RFM69 as follows:
 | CLK     | 23  
 | NSS     | 24  
 | Ground  | 25  
-| RESET   | 22  *here I change it to another GPIO pin, which is GPIO 25 
+| RESET   | 22
 
 You can change the interrupt pin (GPIO24) in the class init.
 
