@@ -6,7 +6,7 @@ import RPi.GPIO as GPIO
 import time
 
 class RFM69(object):
-    def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18, rstPin = 28, spiBus = 0, spiDevice = 0):
+    def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 24, rstPin = 25, spiBus = 0, spiDevice = 0):
 
         self.freqBand = freqBand
         self.address = nodeID
@@ -30,7 +30,7 @@ class RFM69(object):
         self.DATA = []
         self.sendSleepTime = 0.05
 
-        GPIO.setmode(GPIO.BOARD)
+        GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.intPin, GPIO.IN)
         GPIO.setup(self.rstPin, GPIO.OUT)
 
