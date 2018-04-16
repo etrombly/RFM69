@@ -254,7 +254,7 @@ class Radio(object):
             bool: True if packet has been received
 
         """
-        return self.packets > 0
+        return len(self.packets) > 0
 
     def get_packets(self):
         """Get newly received packets.
