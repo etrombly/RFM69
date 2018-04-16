@@ -9,9 +9,8 @@ To initialise the radio you create a context:
 
 .. code-block:: Python
     :emphasize-lines: 5
-    :linenos:
 
-    from RFM69Radio import Radio, FREQ_433MHZ
+    from RFM69 import Radio, FREQ_433MHZ
 
     this_node_id = 1
     with Radio(FREQ_433MHZ, this_node_id) as radio:
@@ -27,14 +26,12 @@ This ensures that the necessary clean-up code is executed when you exit the cont
 Simple Receiver
 ---------------
 
-.. literalinclude:: ../../examples/basic_rx.py
+.. literalinclude:: ../../tests/script_rx_context.py
    :language: python
-   :linenos:
 
 
 Simple Transmitter
 ------------------
 
-.. literalinclude:: ../../examples/basic_tx.py
+.. literalinclude:: ../../tests/script_tx_context.py
    :language: python
-   :linenos:

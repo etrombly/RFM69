@@ -20,12 +20,12 @@ The package expects to be installed on a Raspberry Pi and depends on the `RPI.GP
 
 Contribute
 ----------
-- Issue Tracker: https://github.com/jkittley/RFM69Radio/issues
-- Source Code: https://github.com/jkittley/RFM69Radio
+- Issue Tracker: https://github.com/jkittley/RFM69/issues
+- Source Code: https://github.com/jkittley/RFM69
 
 Support
 -------
-If you are having issues, please let us know by submitting an `issue <https://github.com/jkittley/RFM69Radio/issues>`_.
+If you are having issues, please let us know by submitting an `issue <https://github.com/jkittley/RFM69/issues>`_.
 
 License
 -------

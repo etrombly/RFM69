@@ -8,5 +8,4 @@ Example Code
    :caption: Contents:
 
    example_basic
-   example_redis
    example_arduino

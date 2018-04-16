@@ -26,7 +26,7 @@ lexers['arduino'] = ArduinoLexer(startinline=True)
 
 # -- Project information -----------------------------------------------------
 
-project = 'RFM69Radio'
+project = 'RPI RFM69'
 copyright = '2018, Jacob Kittley-Davies'
 author = 'Jacob Kittley-Davies'
 
