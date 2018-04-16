@@ -30,6 +30,10 @@ class Packet(object):
             return_date = datetime.strftime(self.received, dateFormat)
         return dict(received=return_date, receiver=self.receiver, sender=self.sender, rssi=self.RSSI, data=self.data)
 
+    @property
+    def data_string(self):
+        return "".join([chr(letter) for letter in self.data])
+
     def __str__(self):
         return json.dumps(self.to_dict('%c'))
 
