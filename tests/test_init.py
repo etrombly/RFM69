@@ -1,5 +1,5 @@
 import pytest
-from RFM69Radio import Radio, FREQ_433MHZ
+from RFM69 import Radio, FREQ_433MHZ
 
 def test_init_success():
     radio = Radio(FREQ_433MHZ, 1)
