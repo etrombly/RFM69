@@ -7,7 +7,7 @@ Use the Arduino IDE to upload the script: ```test-node/test-node.ino``` to an Ad
 
 
 ## Setup test environment on remote RaspberryPi
-Run the following commands inside a Python 2 environment (Fabric is Python 2 only currently).
+Run the following commands inside a Python 3 environment.
 
 ```
 pip install -r requirements_local.txt
@@ -20,4 +20,3 @@ From inside your testing environment run:
 ```
 fab test - H raspberrypi.local 
 ```
-
