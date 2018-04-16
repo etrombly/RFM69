@@ -1,53 +1,33 @@
-#!/usr/bin/env python2
-
-from RFM69Radio import Radio, FREQ_433MHZ
+from RFM69 import Radio, FREQ_433MHZ
 import datetime
 import time
 
-NODE=1
-NET=100
-TIMEOUT=3
-TOSLEEP=0.1
-KEY=0
+node_id = 1
+network_id = 100
 
-radio = Radio(FREQ_433MHZ, NODE, NET, isHighPower=True)
-print ("class initialized")
+radio = Radio(FREQ_433MHZ, node_id, network_id, isHighPower=True)
 
-print ("Performing rcCalibration")
+print ("Performing Calibration")
 radio.calibrate_radio()
-
-print ("setting high power")
-radio._setHighPower(True)
 
 print ("Checking temperature")
 print (radio.read_temperature(0))
 
-print ("setting encryption")
-radio._encrypt(KEY)
-
-print ("starting loop...")
-sequence = 0
+print ("Starting loop...")
 while True:
 
-    print ("start recv...")
-    radio._receiveBegin()
-    timedOut=0
-    while not radio._receiveDone():
-        timedOut+=TOSLEEP
-        time.sleep(TOSLEEP)
+    radio.begin_receive()
 
-    if timedOut > TIMEOUT:
-            print ("timed out waiting for recv")
-            break
+    while not radio.has_received_packet():
+        time.sleep(0.1)
 
-    print ("end recv...")
-    print (" *** %s from %s RSSI:%s" % ("".join([chr(letter) for letter in radio.DATA]), radio.SENDERID, radio.RSSI))
+    packet = radio.get_packet(False)
+    print ("Packet Received:")
+    print(packet)    
 
-    if radio._ACKRequested():
-        print ("sending ack...")
-        radio._sendACK()
-    else:
-        print ("ack not requested...")
-
-print ("shutting down")
+    if radio.ack_requested():
+        print ("Sending ack.")
+        radio.send_ack()
+   
+print ("Shutting down")
 radio._shutdown()

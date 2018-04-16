@@ -1,29 +1,21 @@
-#!/usr/bin/env python2
-
-from RFM69Radio import Radio, FREQ_433MHZ
+from RFM69 import Radio, FREQ_433MHZ
 import datetime
 import time
 
-NODE=1
-NET=100
-TIMEOUT=3
-TOSLEEP=0.1
-KEY=0
+node_id = 1
+network_id = 100
 
-with Radio(FREQ_433MHZ, NODE, NET, isHighPower=True) as radio:
-    print ("class initialized")
-    print ("starting loop...")
-    sequence = 0
+with Radio(FREQ_433MHZ, node_id, network_id, isHighPower=True) as radio:
+    print ("Starting loop...")
+
     while True:
+        radio.begin_receive()
 
-        for packet in radio.getPackets():
-            print ("end recv...")
-            print (packet.to_dict())
+        while not radio.has_received_packet():
+            time.sleep(0.1)
 
-        if radio._ACKRequested():
-            print ("sending ack...")
-            radio._sendACK()
-       
+        packet = radio.get_packet(True)
+        print ("Packet Received:")
+        print (packet.to_dict())
 
         time.sleep(0.2)
-
