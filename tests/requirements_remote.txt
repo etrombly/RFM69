@@ -1,0 +1,4 @@
+pytest
+pytest-timeout
+RPI.GPIO
+spidev
