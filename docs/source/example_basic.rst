@@ -23,15 +23,10 @@ This ensures that the necessary clean-up code is executed when you exit the cont
     Frequency selection: FREQ_315MHZ, FREQ_433MHZ, FREQ_868MHZ or FREQ_915MHZ. Select the band appropriate to the radio you have.
 
 
-Simple Receiver
----------------
-
-.. literalinclude:: ../../tests/script_rx_context.py
-   :language: python
-
-
-Simple Transmitter
+Simple Transceiver
 ------------------
 
-.. literalinclude:: ../../tests/script_tx_context.py
+.. literalinclude:: ../../tests/script_rxtx.py
    :language: python
+
+

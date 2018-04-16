@@ -8,4 +8,5 @@ Example Code
    :caption: Contents:
 
    example_basic
+   example_asyncio
    example_arduino
