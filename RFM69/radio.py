@@ -20,7 +20,9 @@ class Radio(object):
             networkID (int): The network ID
 
         Keyword Args:
+            auto_acknowledge (bool): Automatically send acknowledgements
             isHighPower (bool): Is this a high power radio model
+            power (int): Power level - a percentage in range 10 to 100.
             interruptPin (int): Pin number of interrupt pin. This is a pin index not a GPIO number.
             resetPin (int): Pin number of reset pin. This is a pin index not a GPIO number.
             spiBus (int): SPI bus number.
@@ -35,31 +37,42 @@ class Radio(object):
             self.logger = self._init_log()
 
         self.address = nodeID
-   
+
+        self.auto_acknowledge = kwargs.get('autoAcknowledge', True)
         self.isRFM69HW = kwargs.get('isHighPower', False)
         self.intPin = kwargs.get('interruptPin', 18)
         self.rstPin = kwargs.get('resetPin', 29)
         self.spiBus = kwargs.get('spiBus', 0)
         self.spiDevice = kwargs.get('spiDevice', 0)
         self.promiscuousMode = kwargs.get('promiscuousMode', 0)
-
+        
         self.intLock = False
         self.mode = ""
+        self.mode_name = ""
         self.DATASENT = False
-        self.SENDERID = 0
-        self.TARGETID = 0
-        self.PAYLOADLEN = 0
-        self.ACK_REQUESTED = 0
-        self.ACK_RECEIVED = 0
-        self.RSSI = 0
-        self.DATA = []
+        
+        # self.SENDERID = 0
+        # self.TARGETID = 0
+        # self.PAYLOADLEN = 0
+        # self.ACK_REQUESTED = 0
+        # self.ACK_RECEIVED = 0
+        # self.RSSI = 0
+        # self.DATA = []
 
+        self.sendSleepTime = 0.05
+
+        # 
+        self.packets = []
+        self.acks = {}
+        #
+        #         
         self._init_spi()
         self._init_gpio()
         self._reset_radio()
         self._set_config(get_config(freqBand, networkID))
         self._encrypt(kwargs.get('encryptionKey', 0))
         self._setHighPower(self.isRFM69HW)
+        self.set_power_level(kwargs.get('power', 70))
 
         # Wait for ModeReady
         while (self._readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00:
@@ -113,6 +126,7 @@ class Radio(object):
         """When the context begins"""
         self.read_temperature()
         self.calibrate_radio()
+        self.begin_receive()
         return self
 
     def __exit__(self, *args):
@@ -148,24 +162,46 @@ class Radio(object):
 
         """
         assert type(percent) == int
-        self.powerLevel = int(round(powerLevel = 31 * percent))
+        self.powerLevel = int( round(31 * (percent / 100)))
         self._writeReg(REG_PALEVEL, (self._readReg(REG_PALEVEL) & 0xE0) | self.powerLevel)
 
 
-    def send(self, toAddress, buff = "", requestACK = False):
+    def _send(self, toAddress, buff = "", requestACK = False):
         self._writeReg(REG_PACKETCONFIG2, (self._readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
         now = time.time()
         while (not self._canSend()) and time.time() - now < RF69_CSMA_LIMIT_S:
             self.has_received_packet()
         self._sendFrame(toAddress, buff, requestACK, False)
 
-    def sendWithRetry(self, toAddress, buff = "", retries = 3, retryWaitTime = 10):
-        for i in range(0, retries):
-            self.send(toAddress, buff, True)
+
+    def send(self, toAddress, buff = "", **kwargs):
+        """Send a message
+        
+        Args:
+            toAddress (int): Recipient node's ID
+            buff (str): Message buffer to send 
+        
+        Keyword Args:
+            attempts (int): Number of attempts
+            waitTime (int): Milliseconds to wait for acknowledgement
+
+        Returns:
+            bool: If acknowledgement received
+        
+        """
+
+        attempts = kwargs.get('attempts', 3)
+        wait_time = kwargs.get('waitTime', 50)
+
+        for _ in range(0, attempts):
+
+            self._send(toAddress, buff, attempts>0 )
+
             sentTime = time.time()
-            while (time.time() - sentTime) * 1000 < retryWaitTime:
+            while (time.time() - sentTime) * 1000 < wait_time:
                 if self._ACKReceived(toAddress):
                     return True
+
         return False
 
     def read_temperature(self, calFactor=0):
@@ -210,12 +246,12 @@ class Radio(object):
         """Begin listening for packets"""
         while self.intLock:
             time.sleep(.1)
-        self.SENDERID = 0
-        self.TARGETID = 0
-        self.PAYLOADLEN = 0
-        self.ACK_REQUESTED = 0
-        self.ACK_RECEIVED = 0
-        self.RSSI = 0
+        # self.SENDERID = 0
+        # self.TARGETID = 0
+        # self.PAYLOADLEN = 0
+        # self.ACK_REQUESTED = 0
+        # self.ACK_RECEIVED = 0
+        # self.RSSI = 0
         if (self._readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY):
             # avoid RX deadlocks
             self._writeReg(REG_PACKETCONFIG2, (self._readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
@@ -230,47 +266,21 @@ class Radio(object):
             bool: True if packet has been received
 
         """
-        if (self.mode == RF69_MODE_RX or self.mode == RF69_MODE_STANDBY) and self.PAYLOADLEN > 0:
-            self._setMode(RF69_MODE_STANDBY)
-            return True
-        if self._readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_TIMEOUT:
-            # https://github.com/russss/rfm69-python/blob/master/rfm69/rfm69.py#L112
-            # Russss figured out that if you leave alone long enough it times out
-            # tell it to stop being silly and listen for more packets
-            self._writeReg(REG_PACKETCONFIG2, (self._readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
-        elif self.mode == RF69_MODE_RX:
-            # already in RX no payload yet
-            return False
-        self.begin_receive()
-        return False
+        return self.packets > 0
 
-    def get_packet(self, auto_acknowledge=True):
-        """Get newly received packet.
-
-        Args:
-            auto_acknowledge (bool): Send an acknowledgement if requested
+    def get_packets(self):
+        """Get newly received packets.
 
         Returns:
-            RFM69Radio.Packet: Packet objects containing received data and associated meta data.
+            RFM69.Packet: Packet objects containing received data and associated meta data.
         """
-         # Create packet
-        packet = Packet(int(self.TARGETID), int(self.SENDERID), int(self.RSSI), list(self.DATA))
-        
-        # Send acknowledgement if needed
-        if auto_acknowledge:
-            if self.ack_requested():
-                self.send_ack(self.SENDERID)
-                self._debug('Acknowledgement send')
-            else:
-                self._debug('No acknowledgement request')
-        
-        return packet
+        # Create packet
+        packets = list(self.packets)
+        self.packets = []
+        return packets
 
-    def ack_requested(self):
-        return self.ACK_REQUESTED and self.TARGETID != RF69_BROADCAST_ADDR
-
-    def send_ack(self, toAddress = 0, buff = ""):
-        toAddress = toAddress if toAddress > 0 else self.SENDERID
+   
+    def send_ack(self, toAddress, buff = ""):
         while not self._canSend():
             self.has_received_packet()
         self._sendFrame(toAddress, buff, False, True)
@@ -284,20 +294,26 @@ class Radio(object):
         if newMode == self.mode:
             return
         if newMode == RF69_MODE_TX:
+            self.mode_name = "TX"
             self._writeReg(REG_OPMODE, (self._readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_TRANSMITTER)
             if self.isRFM69HW:
                 self._setHighPowerRegs(True)
         elif newMode == RF69_MODE_RX:
+            self.mode_name = "RX"
             self._writeReg(REG_OPMODE, (self._readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_RECEIVER)
             if self.isRFM69HW:
                 self._setHighPowerRegs(False)
         elif newMode == RF69_MODE_SYNTH:
+            self.mode_name = "Synth"
             self._writeReg(REG_OPMODE, (self._readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SYNTHESIZER)
         elif newMode == RF69_MODE_STANDBY:
+            self.mode_name = "Standby"
             self._writeReg(REG_OPMODE, (self._readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_STANDBY)
         elif newMode == RF69_MODE_SLEEP:
+            self.mode_name = "Sleep"
             self._writeReg(REG_OPMODE, (self._readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SLEEP)
         else:
+            self.mode_name = "Unknown"
             return
         # we are using packet mode, so this check is not really needed
         # but waiting for mode ready is necessary when going from sleep because the FIFO may not be immediately available from previous mode
@@ -313,16 +329,20 @@ class Radio(object):
         if self.mode == RF69_MODE_STANDBY:
             self.begin_receive()
             return True
-        #if signal stronger than -100dBm is detected assume channel activity
-        elif self.mode == RF69_MODE_RX and self.PAYLOADLEN == 0 and self._readRSSI() < CSMA_LIMIT:
+        #if signal stronger than -100dBm is detected assume channel activity - removed self.PAYLOADLEN == 0 and
+        elif self.mode == RF69_MODE_RX and self._readRSSI() < CSMA_LIMIT:
             self._setMode(RF69_MODE_STANDBY)
             return True
         return False
 
     def _ACKReceived(self, fromNodeID):
-        if self.has_received_packet():
-            return (self.SENDERID == fromNodeID or fromNodeID == RF69_BROADCAST_ADDR) and self.ACK_RECEIVED
+        if fromNodeID in self.acks:
+            self.acks.pop(fromNodeID, None)
+            return True
         return False
+        # if self.has_received_packet():
+        #     return (self.SENDERID == fromNodeID or fromNodeID == RF69_BROADCAST_ADDR) and self.ACK_RECEIVED
+        # return False
 
     
 
@@ -351,39 +371,13 @@ class Radio(object):
         startTime = time.time()
         self.DATASENT = False
         self._setMode(RF69_MODE_TX)
+        slept = 0
         while not self.DATASENT:
-            if time.time() - startTime > 1.0:
+             time.sleep(self.sendSleepTime)
+             slept += self.sendSleepTime
+             if slept > 1.0:
                 break
         self._setMode(RF69_MODE_RX)
-
-    def _interruptHandler(self, pin):
-        self._debug("-- Interrupt -- ")
-        self.intLock = True
-        self.DATASENT = True
-
-        if self.mode == RF69_MODE_RX and self._readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
-            self._setMode(RF69_MODE_STANDBY)
-        
-            self.PAYLOADLEN, self.TARGETID, self.SENDERID, CTLbyte = self.spi.xfer2([REG_FIFO & 0x7f,0,0,0,0])[1:]
-        
-            if self.PAYLOADLEN > 66:
-                self.PAYLOADLEN = 66
-
-            if not (self.promiscuousMode or self.TARGETID == self.address or self.TARGETID == RF69_BROADCAST_ADDR):
-                self._debug("IGNORE")
-                self.PAYLOADLEN = 0
-                self.intLock = False
-                return
-
-            data_length = self.PAYLOADLEN - 3
-            self.ACK_RECEIVED = CTLbyte & 0x80
-            self.ACK_REQUESTED = CTLbyte & 0x40
-            self.DATA = self.spi.xfer2([REG_FIFO & 0x7f] + [0 for i in range(0, data_length)])[1:]
-            self.RSSI = self._readRSSI()
-
-        self.intLock = False
-
-    
 
     def _readRSSI(self, forceTrigger = False):
         rssi = 0
@@ -464,3 +458,55 @@ class Radio(object):
         if self.logger is not None:
              self.logger.error(*args)
  
+    # 
+    # Radio interrupt handler
+    # 
+
+    def _interruptHandler(self, pin):
+        self.intLock = True
+        self.DATASENT = True
+
+        if self.mode == RF69_MODE_RX and self._readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
+            self._setMode(RF69_MODE_STANDBY)
+        
+            payload_length, target_id, sender_id, CTLbyte = self.spi.xfer2([REG_FIFO & 0x7f,0,0,0,0])[1:]
+        
+            if payload_length > 66:
+                payload_length = 66
+
+            if not (self.promiscuousMode or target_id == self.address or target_id == RF69_BROADCAST_ADDR):
+                self._debug("IGNORE")
+                self.intLock = False
+                return
+
+            data_length = payload_length - 3
+            ack_received  = bool(CTLbyte & 0x80)
+            ack_requested = bool(CTLbyte & 0x40)
+            data = self.spi.xfer2([REG_FIFO & 0x7f] + [0 for i in range(0, data_length)])[1:]
+            rssi = self._readRSSI()
+
+            if ack_received:
+                self._debug("Incoming ack")
+                self._debug(sender_id)
+                # Record acknowledgement
+                self.acks.setdefault(sender_id, 1)
+         
+            elif ack_requested:
+                self._debug("replying to ack request")
+            else:
+                self._debug("Other ??")
+
+            # When message received
+            if not ack_received:
+                self._debug("Incoming data packet")
+                self.packets.append(
+                    Packet(int(target_id), int(sender_id), int(rssi), list(data))
+                )
+
+            # Send acknowledgement if needed
+            if ack_requested and self.auto_acknowledge:
+                self.intLock = False
+                self.send_ack(sender_id)
+             
+        self.intLock = False
+        self.begin_receive()
