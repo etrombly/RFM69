@@ -67,14 +67,14 @@ void setup() {
 
 // Main loop
 unsigned long previousMillis = 0;
-const long sendInterval = 1000;
+const long sendInterval = 3000;
 void loop() {
 
     // Receive
     if (radio.receiveDone()) {
       if (Serial) Serial.println("Message received");
-      delay(20);
       if (radio.ACKRequested()) { radio.sendACK(radio.SENDERID); }
+      delay(100);
     }
 
     
@@ -84,15 +84,13 @@ void loop() {
       previousMillis = currentMillis;
   
       if (Serial) Serial.println("Sending");
-      char payload[] = "hello_from_node";
+      char payload[] = "hello from test node";
       if (radio.sendWithRetry(1, payload, sizeof(payload), 3, 200)) {
         if (Serial) Serial.println("ACK received");
       } else {
         if (Serial) Serial.println("No ACK");
       }
-
     }
-   
 }
 
 // Reset the Radio
