@@ -1,8 +1,4 @@
-"""A setuptools based setup module.
-See:
-https://packaging.python.org/en/latest/distributing.html
-https://github.com/pypa/sampleproject
-"""
+"""A setuptools based setup module."""
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
@@ -20,7 +16,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name='RFM69Radio',  # Required
+    name='rpi-rfm69',  # Required
     # https://packaging.python.org/en/latest/single_source_version.html
     version='0.1.0a1',  # Required
     # https://packaging.python.org/specifications/core-metadata/#summary
@@ -30,7 +26,7 @@ setup(
     # https://packaging.python.org/specifications/core-metadata/#description-content-type-optional
     long_description_content_type='text/markdown',  # Optional (see note above)
     # https://packaging.python.org/specifications/core-metadata/#home-page-optional
-    url='http://github.com/jkittley/RFM69Radio',  # Optional
+    url='http://github.com/jkittley/RFM69',  # Optional
     # This should be your name or the name of the organization which owns the project
     author='Jacob Kittley-Davies',  # Optional
     # This should be a valid email address corresponding to the author listed above.
@@ -47,7 +43,7 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Communications',
         # Pick your license as you wish
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 2',
@@ -60,7 +56,7 @@ setup(
     # This field adds keywords for your project which will appear on the
     # project page. What does your project relate to?
     # Note that this is a string of words separated by whitespace, not a list.
-    keywords='rfm69 raspberrypi pi rf69 radio',  # Optional
+    keywords='rfm69 raspberry pi rf69 radio',  # Optional
 
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
@@ -133,9 +129,9 @@ setup(
     # maintainers, and where to support the project financially. The key is
     # what's used to render the link text on PyPI.
     project_urls={  # Optional
-        'Bug Reports': 'http://github.com/jkittley/RFM69Radio/issues',
-        'Source': 'http://github.com/jkittley/RFM69Radio',
+        'Bug Reports': 'http://github.com/jkittley/RFM69/issues',
+        'Source': 'http://github.com/jkittley/RFM69',
         'Documentation': 'http://rfm69radio.readthedocs.io/',
-        'Tracker': 'http://github.com/jkittley/RFM69Radio/issues',
+        'Tracker': 'http://github.com/jkittley/RFM69/issues',
     },
 )

@@ -1,5 +1,5 @@
 import time
-from RFM69Radio import Radio, FREQ_433MHZ
+from RFM69 import Radio, FREQ_433MHZ
 
 to_node_id = 12    # Recipient
 attempts = 3       # Attempts to make

@@ -7,14 +7,13 @@ import signal
 import sys, json, time, string, datetime
 import asyncio
 from aiohttp import ClientSession
-from RFM69 import RFM69Radio
-from RFM69registers import RF69_433MHZ 
+from RFM69 import Radio, RF69_433MHZ 
 
 loop  = None
 radio = None
 
 def init_radio(node_id=1, network=100, high_power=False, interrupt_pin=18, reset_pin=29):
-    radio = RFM69Radio(RFM69Radio.FREQ_433MHZ, node_id, network, high_power, interrupt_pin, reset_pin)
+    radio = Radio(FREQ_433MHZ, node_id, network, high_power, interrupt_pin, reset_pin)
     print ("Calibrating")
     radio.rcCalibration()
     print ("Setting high power to False - RPI can't supply enough current for high power")

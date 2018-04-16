@@ -1,5 +1,5 @@
 import time
-from RFM69Radio import Radio, FREQ_433MHZ
+from RFM69 import Radio, FREQ_433MHZ
 
 with Radio(FREQ_433MHZ, 1, encryptionKey="sampleEncryptKey", verbose=True, isHighPower=True,) as radio:
     while True:
