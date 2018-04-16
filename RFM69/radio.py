@@ -47,17 +47,10 @@ class Radio(object):
         self.promiscuousMode = kwargs.get('promiscuousMode', 0)
         
         self.intLock = False
+        self.sendLock = False
         self.mode = ""
         self.mode_name = ""
-        self.DATASENT = False
         
-        # self.SENDERID = 0
-        # self.TARGETID = 0
-        # self.PAYLOADLEN = 0
-        # self.ACK_REQUESTED = 0
-        # self.ACK_RECEIVED = 0
-        # self.RSSI = 0
-        # self.DATA = []
 
         self.sendSleepTime = 0.05
 
@@ -246,12 +239,7 @@ class Radio(object):
         """Begin listening for packets"""
         while self.intLock:
             time.sleep(.1)
-        # self.SENDERID = 0
-        # self.TARGETID = 0
-        # self.PAYLOADLEN = 0
-        # self.ACK_REQUESTED = 0
-        # self.ACK_RECEIVED = 0
-        # self.RSSI = 0
+
         if (self._readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY):
             # avoid RX deadlocks
             self._writeReg(REG_PACKETCONFIG2, (self._readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
@@ -368,14 +356,13 @@ class Radio(object):
         else:
             self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + buff)
 
-        startTime = time.time()
-        self.DATASENT = False
+        self.sendLock = True
         self._setMode(RF69_MODE_TX)
         slept = 0
-        while not self.DATASENT:
-             time.sleep(self.sendSleepTime)
-             slept += self.sendSleepTime
-             if slept > 1.0:
+        while self.sendLock:
+            time.sleep(self.sendSleepTime)
+            slept += self.sendSleepTime
+            if slept > 1.0:
                 break
         self._setMode(RF69_MODE_RX)
 
@@ -464,7 +451,7 @@ class Radio(object):
 
     def _interruptHandler(self, pin):
         self.intLock = True
-        self.DATASENT = True
+        self.sendLock = False
 
         if self.mode == RF69_MODE_RX and self._readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY:
             self._setMode(RF69_MODE_STANDBY)
