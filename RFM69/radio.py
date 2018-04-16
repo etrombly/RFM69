@@ -6,7 +6,6 @@ import RPi.GPIO as GPIO
 from .registers import *
 from .packet import Packet
 from .config import get_config
-import Queue
 
 class Radio(object):
 
@@ -54,7 +53,6 @@ class Radio(object):
         self.ACK_RECEIVED = 0
         self.RSSI = 0
         self.DATA = []
-        self.packets = Queue.Queue()
 
         self._init_spi()
         self._init_gpio()
@@ -115,29 +113,13 @@ class Radio(object):
         """When the context begins"""
         self.read_temperature()
         self.calibrate_radio()
-        self._receiveBegin()
         return self
 
     def __exit__(self, *args):
         """When context exits (including when the script is terminated)"""
-        self._shutdown()
-
-    def getPackets(self):
-        """Get newly received packets.
-
-        Once packets have been yielded they are removed from the internal cache.
-    
-        Yields:
-            RFM69Radio.Packet: Packet objects containing received data and associated meta data.
-        """
-        while not self._receiveDone():
-            time.sleep(0.1)
-        if not self.packets.empty():
-            yield self.packets.get()
-    
-        
+        self._shutdown()     
        
-    def setFreqeuncy(self, FRF):
+    def set_frequency(self, FRF):
         """Set the radio frequency"""
         self._writeReg(REG_FRFMSB, FRF >> 16)
         self._writeReg(REG_FRFMID, FRF >> 8)
@@ -174,7 +156,7 @@ class Radio(object):
         self._writeReg(REG_PACKETCONFIG2, (self._readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
         now = time.time()
         while (not self._canSend()) and time.time() - now < RF69_CSMA_LIMIT_S:
-            self._receiveDone()
+            self.has_received_packet()
         self._sendFrame(toAddress, buff, requestACK, False)
 
     def sendWithRetry(self, toAddress, buff = "", retries = 3, retryWaitTime = 10):
@@ -224,6 +206,76 @@ class Radio(object):
             results.append([str(hex(address)), str(bin(self._readReg(address)))])
         return results
 
+    def begin_receive(self):
+        """Begin listening for packets"""
+        while self.intLock:
+            time.sleep(.1)
+        self.SENDERID = 0
+        self.TARGETID = 0
+        self.PAYLOADLEN = 0
+        self.ACK_REQUESTED = 0
+        self.ACK_RECEIVED = 0
+        self.RSSI = 0
+        if (self._readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY):
+            # avoid RX deadlocks
+            self._writeReg(REG_PACKETCONFIG2, (self._readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
+        #set DIO0 to "PAYLOADREADY" in receive mode
+        self._writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_01)
+        self._setMode(RF69_MODE_RX)
+
+    def has_received_packet(self):
+        """Check if packet received
+
+        Returns:
+            bool: True if packet has been received
+
+        """
+        if (self.mode == RF69_MODE_RX or self.mode == RF69_MODE_STANDBY) and self.PAYLOADLEN > 0:
+            self._setMode(RF69_MODE_STANDBY)
+            return True
+        if self._readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_TIMEOUT:
+            # https://github.com/russss/rfm69-python/blob/master/rfm69/rfm69.py#L112
+            # Russss figured out that if you leave alone long enough it times out
+            # tell it to stop being silly and listen for more packets
+            self._writeReg(REG_PACKETCONFIG2, (self._readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
+        elif self.mode == RF69_MODE_RX:
+            # already in RX no payload yet
+            return False
+        self.begin_receive()
+        return False
+
+    def get_packet(self, auto_acknowledge=True):
+        """Get newly received packet.
+
+        Args:
+            auto_acknowledge (bool): Send an acknowledgement if requested
+
+        Returns:
+            RFM69Radio.Packet: Packet objects containing received data and associated meta data.
+        """
+         # Create packet
+        packet = Packet(int(self.TARGETID), int(self.SENDERID), int(self.RSSI), list(self.DATA))
+        
+        # Send acknowledgement if needed
+        if auto_acknowledge:
+            if self.ack_requested():
+                self.send_ack(self.SENDERID)
+                self._debug('Acknowledgement send')
+            else:
+                self._debug('No acknowledgement request')
+        
+        return packet
+
+    def ack_requested(self):
+        return self.ACK_REQUESTED and self.TARGETID != RF69_BROADCAST_ADDR
+
+    def send_ack(self, toAddress = 0, buff = ""):
+        toAddress = toAddress if toAddress > 0 else self.SENDERID
+        while not self._canSend():
+            self.has_received_packet()
+        self._sendFrame(toAddress, buff, False, True)
+
+
     # 
     # Internal functions
     # 
@@ -259,7 +311,7 @@ class Radio(object):
 
     def _canSend(self):
         if self.mode == RF69_MODE_STANDBY:
-            self._receiveBegin()
+            self.begin_receive()
             return True
         #if signal stronger than -100dBm is detected assume channel activity
         elif self.mode == RF69_MODE_RX and self.PAYLOADLEN == 0 and self._readRSSI() < CSMA_LIMIT:
@@ -268,18 +320,11 @@ class Radio(object):
         return False
 
     def _ACKReceived(self, fromNodeID):
-        if self._receiveDone():
+        if self.has_received_packet():
             return (self.SENDERID == fromNodeID or fromNodeID == RF69_BROADCAST_ADDR) and self.ACK_RECEIVED
         return False
 
-    def _ACKRequested(self):
-        return self.ACK_REQUESTED and self.TARGETID != RF69_BROADCAST_ADDR
-
-    def _sendACK(self, toAddress = 0, buff = ""):
-        toAddress = toAddress if toAddress > 0 else self.SENDERID
-        while not self._canSend():
-            self._receiveDone()
-        self._sendFrame(toAddress, buff, False, True)
+    
 
     def _sendFrame(self, toAddress, buff, requestACK, sendACK):
         #turn off receiver to prevent reception while filling fifo
@@ -338,45 +383,7 @@ class Radio(object):
 
         self.intLock = False
 
-    def _receiveBegin(self):
-        while self.intLock:
-            time.sleep(.1)
-        self.SENDERID = 0
-        self.TARGETID = 0
-        self.PAYLOADLEN = 0
-        self.ACK_REQUESTED = 0
-        self.ACK_RECEIVED = 0
-        self.RSSI = 0
-        if (self._readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY):
-            # avoid RX deadlocks
-            self._writeReg(REG_PACKETCONFIG2, (self._readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
-        #set DIO0 to "PAYLOADREADY" in receive mode
-        self._writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_01)
-        self._setMode(RF69_MODE_RX)
-
-    def _receiveDone(self):
-        if (self.mode == RF69_MODE_RX or self.mode == RF69_MODE_STANDBY) and self.PAYLOADLEN > 0:
-            self._setMode(RF69_MODE_STANDBY)
-            # Create packet
-            self.packets.put(Packet(int(self.TARGETID), int(self.SENDERID), int(self.RSSI), list(self.DATA)))
-            # # Send acknowledgement if needed
-            # if self._ACKRequested():
-            #     self._sendACK(self.SENDERID)
-            #     self._debug('Acknowledgement send')
-            # else:
-            #     self._debug('No acknowledgement request')
-
-            return True
-        if self._readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_TIMEOUT:
-            # https://github.com/russss/rfm69-python/blob/master/rfm69/rfm69.py#L112
-            # Russss figured out that if you leave alone long enough it times out
-            # tell it to stop being silly and listen for more packets
-            self._writeReg(REG_PACKETCONFIG2, (self._readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
-        elif self.mode == RF69_MODE_RX:
-            # already in RX no payload yet
-            return False
-        self._receiveBegin()
-        return False
+    
 
     def _readRSSI(self, forceTrigger = False):
         rssi = 0
