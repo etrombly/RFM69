@@ -1,14 +1,16 @@
-#!/usr/bin/env python3
+# The next two lines are just to make the examples work in this directory for now
+import sys
+sys.path.append("../")
+# --------------------
 
 import signal, sys
-import RFM69
-from RFM69registers import RF69_433MHZ
+from RFM69 import RFM69Radio
 import datetime
 import time
 
 node_id    = 1
 network_id = 100
-frequency  = RF69_433MHZ
+frequency  = RFM69Radio.FREQ_433MHZ
 high_power = False
 encryptkey = "sampleEncryptKey"
 interrupt_pin = 18
@@ -26,7 +28,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     
     print("Starting")
-    radio = RFM69.RFM69(frequency, node_id, network_id, high_power, interrupt_pin, reset_pin)
+    radio = RFM69Radio(frequency, node_id, network_id, high_power, interrupt_pin, reset_pin)
 
     print ("All registers")
     results = radio.readAllRegs()
@@ -50,7 +52,7 @@ if __name__ == "__main__":
         while not radio.receiveDone():
             time.sleep(.1)
 
-        print ("Packet received from {} (RSSI: {})".format(radio.SENDERID, radio.RSSI))
+        print ("Packet received from Node {} (RSSI: {})".format(radio.SENDERID, radio.RSSI))
         print ("Data", radio.DATA)
 
         if radio.ACKRequested():
