@@ -1,18 +1,17 @@
 import pytest
 import time
-from RFM69Radio import Radio, FREQ_433MHZ
+from RFM69 import Radio, FREQ_433MHZ
 
 
 def test_transmit():
-    with Radio(FREQ_433MHZ, 1) as radio:
-        success = radio.send(2, "Banana", 3, 500)
+    with Radio(FREQ_433MHZ, 1, 100, isHighPower=True, verbose=True) as radio:
+        success = radio.send(2, "Banana", attempts=5, waitTime=100)
         assert success == True
 
-# @pytest.mark.timeout(15)å
 def test_receive():
-    with Radio(FREQ_433MHZ, 1, verbose=True, promiscuousMode=True) as radio:
+    with Radio(FREQ_433MHZ, 1, 100, isHighPower=True, verbose=True) as radio:
         while True:
-            for _ in radio.getPackets():
-                assert True 
+            for _ in radio.get_packets():
+                assert True
+                return True
             time.sleep(.1)
-    
