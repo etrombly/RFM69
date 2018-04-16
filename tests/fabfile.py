@@ -31,7 +31,7 @@ class Settings:
     
     SYNC_DIRS = [                      
         ("./", DIR_CODE),
-        ("../RFM69Radio", DIR_CODE)
+        ("../RFM69", DIR_CODE)
     ]                  
     # Requirements
     REQUIRMENTS_FILES = [
