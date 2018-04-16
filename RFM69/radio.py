@@ -39,7 +39,7 @@ class Radio(object):
         self.address = nodeID
 
         self.auto_acknowledge = kwargs.get('autoAcknowledge', True)
-        self.isRFM69HW = kwargs.get('isHighPower', False)
+        self.isRFM69HW = kwargs.get('isHighPower', True)
         self.intPin = kwargs.get('interruptPin', 18)
         self.rstPin = kwargs.get('resetPin', 29)
         self.spiBus = kwargs.get('spiBus', 0)
@@ -269,6 +269,12 @@ class Radio(object):
 
    
     def send_ack(self, toAddress, buff = ""):
+        """Send an acknowledgemet packet
+
+        Args: 
+            toAddress (int): Recipient node's ID
+
+        """
         while not self._canSend():
             self.has_received_packet()
         self._sendFrame(toAddress, buff, False, True)
