@@ -1,4 +1,4 @@
 termcolor
 unipath
-fabric
-fabtools
+fabric3
+fabtools3
