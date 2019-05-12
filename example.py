@@ -23,12 +23,22 @@ print "sending blah to 2"
 if test.sendWithRetry(2, "blah", 3, 20):
     print "ack recieved"
 print "reading"
+
 while True:
-    test.receiveBegin()
-    while not test.receiveDone():
-        time.sleep(.1)
-    print "%s from %s RSSI:%s" % ("".join([chr(letter) for letter in test.DATA]), test.SENDERID, test.RSSI)
-    if test.ACKRequested():
-        test.sendACK()
-print "shutting down"
-test.shutdown()
+    try:
+        test.receiveBegin()
+        while not test.receiveDone():
+            time.sleep(.1)
+        print "%s from %s RSSI:%s" % ("".join([chr(letter) for letter in test.DATA]), test.SENDERID, test.RSSI)
+        if test.ACKRequested():
+            test.sendACK()
+    except KeyboardInterrupt:
+        userAnswer = raw_input('Enter "yes" to cancel or "no" to keep running [yes/no]:').strip().lower()
+
+        if userAnswer == 'yes':
+            # quit as requested by user
+            print "shutting down"
+            test.shutdown()
+            break
+        else:
+            continue
