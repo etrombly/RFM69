@@ -229,8 +229,6 @@ class RFM69(object):
         #wait for modeReady
         while (self.readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00:
             pass
-        # DIO0 is "Packet Sent"
-        self.writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_00)
 
         if (len(buff) > RF69_MAX_DATA_LEN):
             buff = buff[0:RF69_MAX_DATA_LEN]
@@ -247,12 +245,8 @@ class RFM69(object):
 
         self.DATASENT = False
         self.setMode(RF69_MODE_TX)
-        slept = 0
-        while not self.DATASENT:
-            time.sleep(self.sendSleepTime)
-            slept += self.sendSleepTime
-            if slept > 1.0:
-                break
+        while (self.readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PACKETSENT) == 0x00:
+            pass
         self.setMode(RF69_MODE_RX)
 
     def interruptHandler(self, pin):
