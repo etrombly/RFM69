@@ -5,7 +5,11 @@ from RFM69registers import *
 import datetime
 import time
 
-test = RFM69.RFM69(RF69_915MHZ, 1, 1, True)
+network_id = 1
+node_id = 1
+is_rfm_69HW = True
+
+test = RFM69.RFM69(RF69_915MHZ, node_id, network_id, is_rfm_69HW)
 print "class initialized"
 print "reading all registers"
 results = test.readAllRegs()
