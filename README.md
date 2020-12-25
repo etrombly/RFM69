@@ -1,4 +1,4 @@
-# Original repo
+# Main repo
 
 * https://github.com/etrombly/RFM69
 
@@ -19,7 +19,7 @@ Attach the RFM69 as follows:
 | CLK     | 23  
 | NSS     | 24  
 | Ground  | 25  
-| RESET   | 22
+| RESET   | 29
 
 You can change the interrupt pin (GPIO24) in the class init.
 
