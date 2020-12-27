@@ -33,33 +33,41 @@ radio.encrypt(KEY)
 
 print "starting loop..."
 sequence = 0
+
 while True:
+    try:
+        msg = "I'm radio %d: %d" % (NODE, sequence)
+        sequence = sequence + 1
 
-    msg = "I'm radio %d: %d" % (NODE, sequence)
-    sequence = sequence + 1
+        print "tx to radio 2: " + msg
+        if radio.sendWithRetry(2, msg, 3, 20):
+            print "ack recieved"
 
-    print "tx to radio 2: " + msg
-    if radio.sendWithRetry(2, msg, 3, 20):
-        print "ack recieved"
+        print "start recv..."
+        radio.receiveBegin()
+        timedOut=0
+        while not radio.receiveDone():
+            timedOut+=TOSLEEP
+            time.sleep(TOSLEEP)
+    	if timedOut > TIMEOUT:
+                print "timed out waiting for recv"
+                break
 
-    print "start recv..."
-    radio.receiveBegin()
-    timedOut=0
-    while not radio.receiveDone():
-        timedOut+=TOSLEEP
-        time.sleep(TOSLEEP)
-	if timedOut > TIMEOUT:
-            print "timed out waiting for recv"
+        print "end recv..."
+        print " *** %s from %s RSSI:%s" % ("".join([chr(letter) for letter in radio.DATA]), radio.SENDERID, radio.RSSI)
+
+        if radio.ACKRequested():
+            print "sending ack..."
+            radio.sendACK()
+        else:
+            print "ack not requested..."
+    except KeyboardInterrupt:
+        userAnswer = raw_input('Enter "yes" to cancel or "no" to keep running [yes/no]:').strip().lower()
+
+        if userAnswer == 'yes':
+            # quit as requested by user
+            print "shutting down"
+            radio.shutdown()
             break
-
-    print "end recv..."
-    print " *** %s from %s RSSI:%s" % ("".join([chr(letter) for letter in radio.DATA]), radio.SENDERID, radio.RSSI)
-
-    if radio.ACKRequested():
-        print "sending ack..."
-        radio.sendACK()
-    else:
-        print "ack not requested..."
-
-print "shutting down"
-radio.shutdown()
+        else:
+            continue
