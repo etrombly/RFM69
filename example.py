@@ -27,12 +27,13 @@ print "sending blah to 2"
 if test.sendWithRetry(2, "blah", 3, 20):
     print "ack recieved"
 print "reading"
+test.receiveBegin()
 while True:
-    test.receiveBegin()
-    while not test.receiveDone():
-        time.sleep(.1)
-    print "%s from %s RSSI:%s" % ("".join([chr(letter) for letter in test.DATA]), test.SENDERID, test.RSSI)
-    if test.ACKRequested():
-        test.sendACK()
+    if test.receiveDone():
+        print "%s from %s RSSI:%s" % ("".join([chr(letter) for letter in test.DATA]), test.SENDERID, test.RSSI)
+        if test.ACKRequested():
+            test.sendACK()
+        else:
+            test.receiveBegin()
 print "shutting down"
 test.shutdown()

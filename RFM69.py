@@ -206,6 +206,7 @@ class RFM69(object):
             sentTime = time.time()
             while (time.time() - sentTime) * 1000 < retryWaitTime:
                 if self.ACKReceived(toAddress):
+                    self.receiveBegin()
                     return True
         return False
 
@@ -289,6 +290,8 @@ class RFM69(object):
         self.setMode(RF69_MODE_RX)
 
     def receiveDone(self):
+        while self.intLock:
+            pass # wait for lock to be removed
         if (self.mode == RF69_MODE_RX or self.mode == RF69_MODE_STANDBY) and self.PAYLOADLEN > 0:
             self.setMode(RF69_MODE_STANDBY)
             return True
@@ -297,10 +300,6 @@ class RFM69(object):
             # Russss figured out that if you leave alone long enough it times out
             # tell it to stop being silly and listen for more packets
             self.writeReg(REG_PACKETCONFIG2, (self.readReg(REG_PACKETCONFIG2) & 0xFB) | RF_PACKET2_RXRESTART)
-        elif self.mode == RF69_MODE_RX:
-            # already in RX no payload yet
-            return False
-        self.receiveBegin()
         return False
 
     def readRSSI(self, forceTrigger = False):
