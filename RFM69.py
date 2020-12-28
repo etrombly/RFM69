@@ -30,7 +30,7 @@ class RFM69(object):
         self.DATA = []
         self.sendSleepTime = 0.05
 
-        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.intPin, GPIO.IN)
         GPIO.setup(self.rstPin, GPIO.OUT)
 
@@ -380,72 +380,74 @@ class RFM69(object):
         self.sleep()
         GPIO.cleanup()
 
-    
-    def listenModeSendBurst(self, toAddress, buff):
+    #
+    # Sends data in a special manner (cf. https://lowpowerlab.com/forum/low-power-techniques/low-power-radio-wakeup/)
+    # Parameters:
+    #   toAddress: nodeId of the recipient
+    #   buff: data buffer to send
+    #   burstDurationSec: duration of burst transmission in seconds 
+    #                      (should match the setting on the receiver side)
+    def sendBurst(self, toAddress, buff, burstDurationSec = 1.0):
 
+    	self.setMode(RF69_MODE_STANDBY)
+	    self.writeReg(REG_PACKETCONFIG1, RF_PACKET1_FORMAT_VARIABLE | RF_PACKET1_DCFREE_WHITENING | RF_PACKET1_CRC_ON | RF_PACKET1_CRCAUTOCLEAR_ON )
+  	    self.writeReg(REG_PACKETCONFIG2, RF_PACKET2_RXRESTARTDELAY_NONE | RF_PACKET2_AUTORXRESTART_ON | RF_PACKET2_AES_OFF)
+  	    self.writeReg(REG_SYNCVALUE1, 0x5A)
+  	    self.writeReg(REG_SYNCVALUE2, 0x5A)
+  	    self.writeReg(REG_FRFMSB, self.readReg(REG_FRFMSB) + 1)
+  	    self.writeReg(REG_FRFLSB, self.readReg(REG_FRFLSB))  
+	
+	    #listenModeApplyHighSpeedSettings
+	    self.writeReg(REG_BITRATEMSB, RF_BITRATEMSB_200000)
+  	    self.writeReg(REG_BITRATELSB, RF_BITRATELSB_200000)
+  	    self.writeReg(REG_FDEVMSB, RF_FDEVMSB_100000)
+  	    self.writeReg(REG_FDEVLSB, RF_FDEVLSB_100000)
+	    self.writeReg(REG_RXBW, RF_RXBW_DCCFREQ_000 | RF_RXBW_MANT_20 | RF_RXBW_EXP_0 )    
+
+	    Duration = 1
+	    StartDuration = Duration
+	    StartTime = time.time()
+	
+	    while(Duration > 0):
+		
+            # DIO0 is "Packet Sent"
+            self.writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_00)
+
+            if (len(buff) > RF69_MAX_DATA_LEN):
+                buff = buff[0:RF69_MAX_DATA_LEN]
+
+            ack = 0x40
+		
+            if isinstance(buff, basestring):
+        	    self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + [int(ord(i)) for i in list(buff)])
+            else:
+            	self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + buff)
+
+            self.DATASENT = False
+            self.setMode(RF69_MODE_TX)
+            slept = 0
+            while not self.DATASENT:
+               	time.sleep(self.sendSleepTime)
+           	    slept += self.sendSleepTime
+           	    if slept > burstDurationSec:
+		            break
+		
+		    Duration = StartDuration - (time.time() - StartTime)
+		
 	self.setMode(RF69_MODE_STANDBY)
-	self.writeReg(REG_PACKETCONFIG1, RF_PACKET1_FORMAT_VARIABLE | RF_PACKET1_DCFREE_WHITENING | RF_PACKET1_CRC_ON | RF_PACKET1_CRCAUTOCLEAR_ON )
-  	self.writeReg(REG_PACKETCONFIG2, RF_PACKET2_RXRESTARTDELAY_NONE | RF_PACKET2_AUTORXRESTART_ON | RF_PACKET2_AES_OFF)
-  	self.writeReg(REG_SYNCVALUE1, 0x5A)
-  	self.writeReg(REG_SYNCVALUE2, 0x5A)
-  	self.writeReg(REG_FRFMSB, self.readReg(REG_FRFMSB) + 1)
-  	self.writeReg(REG_FRFLSB, self.readReg(REG_FRFLSB))  
-	
-	#listenModeApplyHighSpeedSettings
-	self.writeReg(REG_BITRATEMSB, RF_BITRATEMSB_200000)
-  	self.writeReg(REG_BITRATELSB, RF_BITRATELSB_200000)
-  	self.writeReg(REG_FDEVMSB, RF_FDEVMSB_100000)
-  	self.writeReg(REG_FDEVLSB, RF_FDEVLSB_100000)
-	self.writeReg( REG_RXBW, RF_RXBW_DCCFREQ_000 | RF_RXBW_MANT_20 | RF_RXBW_EXP_0 )    
-
-	Duration = 1
-	StartDuration = Duration
-	StartTime = time.time()
-	
-	while(Duration > 0):
-		
-        	# DIO0 is "Packet Sent"
-        	self.writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_00)
-
-        	if (len(buff) > RF69_MAX_DATA_LEN):
-            	    buff = buff[0:RF69_MAX_DATA_LEN]
-
-                ack = 0x40
-		
-        	if isinstance(buff, basestring):
-            		self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + [int(ord(i)) for i in list(buff)])
-        	else:
-            		self.spi.xfer2([REG_FIFO | 0x80, len(buff) + 3, toAddress, self.address, ack] + buff)
-
-        	self.DATASENT = False
-        	self.setMode(RF69_MODE_TX)
-            	slept = 0
-        	while not self.DATASENT:
-            		time.sleep(self.sendSleepTime)
-            		slept += self.sendSleepTime
-            		if slept > 1.0:
-				break
-		
-		
-		Duration = StartDuration - (time.time() - StartTime)
-		
-	self.setMode(RF69_MODE_STANDBY)
-	
-
 	self.setFreqeuncy(self.freqBand)
-	self.init()
-
+	self.resetToNormalMode()
 	
-    def init(self):
+    def resetToNormalMode(self):
 
-	frfMSB = {RF69_315MHZ: RF_FRFMSB_315, RF69_433MHZ: RF_FRFMSB_433,
+	    frfMSB = {RF69_315MHZ: RF_FRFMSB_315, RF69_433MHZ: RF_FRFMSB_433,
                   RF69_868MHZ: RF_FRFMSB_868, RF69_915MHZ: RF_FRFMSB_915}
         frfMID = {RF69_315MHZ: RF_FRFMID_315, RF69_433MHZ: RF_FRFMID_433,
                   RF69_868MHZ: RF_FRFMID_868, RF69_915MHZ: RF_FRFMID_915}
         frfLSB = {RF69_315MHZ: RF_FRFLSB_315, RF69_433MHZ: RF_FRFLSB_433,
                   RF69_868MHZ: RF_FRFLSB_868, RF69_915MHZ: RF_FRFLSB_915}
 
-	self.CONFIG = {
+	    self.CONFIG = {
           0x01: [REG_OPMODE, RF_OPMODE_SEQUENCER_ON | RF_OPMODE_LISTEN_OFF | RF_OPMODE_STANDBY],
           #no shaping
           0x02: [REG_DATAMODUL, RF_DATAMODUL_DATAMODE_PACKET | RF_DATAMODUL_MODULATIONTYPE_FSK | RF_DATAMODUL_MODULATIONSHAPING_00],
@@ -499,13 +501,9 @@ class RFM69(object):
           0x00: [255, 0]
         }
 
-	#write config
+    	#write config
         for value in self.CONFIG.values():
             self.writeReg(value[0], value[1])
 
-	self.writeReg(REG_LNA, (self.readReg(REG_LNA) & ~0x3) | RF_LNA_GAINSELECT_AUTO)
-	self.setHighPower(self.isRFM69HW)
-
-
-
-
+    	self.writeReg(REG_LNA, (self.readReg(REG_LNA) & ~0x3) | RF_LNA_GAINSELECT_AUTO)
+    	self.setHighPower(self.isRFM69HW)
