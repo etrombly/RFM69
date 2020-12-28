@@ -380,7 +380,14 @@ class RFM69(object):
         self.sleep()
         GPIO.cleanup()
 
-    def listenModeSendBurst(self, toAddress, buff):
+    #
+    # Sends data in a special manner (cf. https://lowpowerlab.com/forum/low-power-techniques/low-power-radio-wakeup/)
+    # Parameters:
+    #   toAddress: nodeId of the recipient
+    #   buff: data buffer to send
+    #   burstDurationSec: duration of burst transmission in seconds 
+    #                      (should match the setting on the receiver side)
+    def sendBurst(self, toAddress, buff, burstDurationSec = 1.0):
 
     	self.setMode(RF69_MODE_STANDBY)
 	    self.writeReg(REG_PACKETCONFIG1, RF_PACKET1_FORMAT_VARIABLE | RF_PACKET1_DCFREE_WHITENING | RF_PACKET1_CRC_ON | RF_PACKET1_CRCAUTOCLEAR_ON )
@@ -422,16 +429,16 @@ class RFM69(object):
             while not self.DATASENT:
                	time.sleep(self.sendSleepTime)
            	    slept += self.sendSleepTime
-           	    if slept > 1.0:
+           	    if slept > burstDurationSec:
 		            break
 		
 		    Duration = StartDuration - (time.time() - StartTime)
 		
 	self.setMode(RF69_MODE_STANDBY)
 	self.setFreqeuncy(self.freqBand)
-	self.init()
+	self.resetToNormalMode()
 	
-    def init(self):
+    def resetToNormalMode(self):
 
 	    frfMSB = {RF69_315MHZ: RF_FRFMSB_315, RF69_433MHZ: RF_FRFMSB_433,
                   RF69_868MHZ: RF_FRFMSB_868, RF69_915MHZ: RF_FRFMSB_915}
