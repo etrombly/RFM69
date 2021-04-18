@@ -28,12 +28,3 @@ Remember to choose correct frequency for your hardware (315, 433, 868 or 915 MHz
 # Prerequisites
 
 RPi.GPIO and spidev
-
-If you are using newer firmware you'll need to get a newer spidev, the old one is no longer working:
-
-```bash
-git clone https://github.com/Gadgetoid/py-spidev
-cd py-spidev
-sudo make install
-```
-
