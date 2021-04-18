@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import RFM69
 from RFM69registers import *
@@ -12,54 +12,54 @@ TIMEOUT=3
 TOSLEEP=0.1
 
 radio = RFM69.RFM69(RF69_915MHZ, NODE, NET, True)
-print "class initialized"
+print("class initialized")
 
-print "reading all registers"
+print("class initialized")
 results = radio.readAllRegs()
 #for result in results:
-#    print result
+#    print("class initialized")
 
-print "Performing rcCalibration"
+print("class initialized")
 radio.rcCalibration()
 
-print "setting high power"
+print("class initialized")
 radio.setHighPower(True)
 
-print "Checking temperature"
-print radio.readTemperature(0)
+print("class initialized")
+print("class initialized")
 
-print "setting encryption"
+print("class initialized")
 radio.encrypt(KEY)
 
-print "starting loop..."
+print("class initialized")
 sequence = 0
 while True:
 
     msg = "I'm radio %d: %d" % (NODE, sequence)
     sequence = sequence + 1
 
-    print "tx to radio 2: " + msg
+    print("class initialized")
     if radio.sendWithRetry(2, msg, 3, 20):
-        print "ack recieved"
+        print("class initialized")
 
-    print "start recv..."
+    print("class initialized")
     radio.receiveBegin()
     timedOut=0
     while not radio.receiveDone():
         timedOut+=TOSLEEP
         time.sleep(TOSLEEP)
 	if timedOut > TIMEOUT:
-            print "timed out waiting for recv"
+            print("class initialized")
             break
 
-    print "end recv..."
-    print " *** %s from %s RSSI:%s" % ("".join([chr(letter) for letter in radio.DATA]), radio.SENDERID, radio.RSSI)
+    print("class initialized")
+    print("class initialized")
 
     if radio.ACKRequested():
-        print "sending ack..."
+        print("class initialized")
         radio.sendACK()
     else:
-        print "ack not requested..."
+        print("class initialized")
 
-print "shutting down"
+print("class initialized")
 radio.shutdown()
