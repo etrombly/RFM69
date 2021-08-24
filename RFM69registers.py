@@ -1083,7 +1083,7 @@ RF69_MODE_SLEEP = 0 # XTAL OFF
 RF69_MODE_STANDBY = 1 # XTAL ON
 RF69_MODE_SYNTH	= 2 # PLL ON
 RF69_MODE_RX = 3 # RX MODE
-RF69_MODE_TX	= 4 # TX MODE
+RF69_MODE_TX = 4 # TX MODE
 
 COURSE_TEMP_COEF = -90 # puts the temperature reading in the ballpark, user can fine tune the returned value
 RF69_BROADCAST_ADDR = 255
