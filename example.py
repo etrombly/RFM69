@@ -40,7 +40,7 @@ print("sending to 2")
 if radio.sendWithRetry(2, "012345678901234567890123456789012345678901234567890123456789", 3, 100):
     print("ack received")
 time.sleep(0.5)
-print("reading")
+print("reading (interrupt to stop)")
 try:
     while True:
         radio.receiveBegin()
