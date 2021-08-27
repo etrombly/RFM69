@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 
+# Preconfigured for Raspberry Pi
+# For Orange Pi, change:
+# - import OPi.GPIO (pip install OrangePi.GPIO)
+# - spiBus = 1
+# - uncomment GPIO.setboard() call and set correct board type
+
 from RFM69registers import *
 import spidev
 import RPi.GPIO as GPIO
 import time
 
 class RFM69(object):
-    def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18, rstPin = 29, spiBus = 0, spiDevice = 0):
+    def __init__(self, freqBand, nodeID, networkID, isRFM69HW = False, intPin = 18, rstPin = 22, spiBus = 0, spiDevice = 0):
 
         self.freqBand = freqBand
         self.address = nodeID
@@ -30,6 +36,7 @@ class RFM69(object):
         self.DATA = []
         self.sendSleepTime = 0.05
 
+        #GPIO.setboard(GPIO.ZERO)   # for Orange Pi, see https://pypi.org/project/OrangePi.GPIO/
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.intPin, GPIO.IN)
         GPIO.setup(self.rstPin, GPIO.OUT)
@@ -46,11 +53,11 @@ class RFM69(object):
           #no shaping
           0x02: [REG_DATAMODUL, RF_DATAMODUL_DATAMODE_PACKET | RF_DATAMODUL_MODULATIONTYPE_FSK | RF_DATAMODUL_MODULATIONSHAPING_00],
           #default:4.8 KBPS
-          0x03: [REG_BITRATEMSB, RF_BITRATEMSB_55555],
-          0x04: [REG_BITRATELSB, RF_BITRATELSB_55555],
+          0x03: [REG_BITRATEMSB, RF_BITRATEMSB_4800],
+          0x04: [REG_BITRATELSB, RF_BITRATELSB_4800],
           #default:5khz, (FDEV + BitRate/2 <= 500Khz)
-          0x05: [REG_FDEVMSB, RF_FDEVMSB_50000],
-          0x06: [REG_FDEVLSB, RF_FDEVLSB_50000],
+          0x05: [REG_FDEVMSB, RF_FDEVMSB_5000],
+          0x06: [REG_FDEVLSB, RF_FDEVLSB_5000],
 
           0x07: [REG_FRFMSB, frfMSB[freqBand]],
           0x08: [REG_FRFMID, frfMID[freqBand]],
@@ -126,10 +133,17 @@ class RFM69(object):
         GPIO.remove_event_detect(self.intPin)
         GPIO.add_event_detect(self.intPin, GPIO.RISING, callback=self.interruptHandler)
 
-    def setFreqeuncy(self, FRF):
-        self.writeReg(REG_FRFMSB, FRF >> 16)
-        self.writeReg(REG_FRFMID, FRF >> 8)
-        self.writeReg(REG_FRFLSB, FRF)
+    def setFrequency(self, freqHz):
+        step = 61.03515625
+        freq = int(round(freqHz / step))
+        self.writeReg(REG_FRFMSB, freq >> 16)
+        self.writeReg(REG_FRFMID, freq >> 8)
+        self.writeReg(REG_FRFLSB, freq)
+
+    def getFrequency(self):
+        step = 61.03515625
+        freq = (self.readReg(REG_FRFMSB) << 16) + (self.readReg(REG_FRFMID) << 8) + self.readReg(REG_FRFLSB)
+        return int(round(freq * step))
 
     def setMode(self, newMode):
         if newMode == self.mode:
@@ -196,9 +210,9 @@ class RFM69(object):
 #    to increase the chance of getting a packet across, call this function instead of send
 #    and it handles all the ACK requesting/retrying for you :)
 #    The only twist is that you have to manually listen to ACK requests on the other side and send back the ACKs
-#    The reason for the semi-automaton is that the lib is ingterrupt driven and
+#    The reason for the semi-automaton is that the lib is interrupt-driven and
 #    requires user action to read the received data and decide what to do with it
-#    replies usually take only 5-8ms at 50kbps@915Mhz
+#    replies usually take only 5-8ms at 50kbps
 
     def sendWithRetry(self, toAddress, buff = "", retries = 3, retryWaitTime = 10):
         for i in range(0, retries):
@@ -207,6 +221,10 @@ class RFM69(object):
             while (time.time() - sentTime) * 1000 < retryWaitTime:
                 if self.ACKReceived(toAddress):
                     return True
+                # Delay needed for code stability (no idea why)
+                # Otherwise, the ACK message is received but will not be regarded by this code
+                # This still isn't 100% stable though, occasionally received ACKs are still ignored
+                time.sleep(0.01)
         return False
 
     def ACKReceived(self, fromNodeID):
@@ -268,10 +286,10 @@ class RFM69(object):
             self.DATA = self.spi.xfer2([REG_FIFO & 0x7f] + [0 for i in range(0, self.DATALEN)])[1:]
 
             self.RSSI = self.readRSSI()
+            #print(f"received {self.PAYLOADLEN} raw bytes from {self.SENDERID} ack={self.ACK_RECEIVED}")
         self.intLock = False
 
     def receiveBegin(self):
-
         while self.intLock:
             time.sleep(.1)
         self.DATALEN = 0
