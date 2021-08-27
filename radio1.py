@@ -1,65 +1,80 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import RFM69
 from RFM69registers import *
 import datetime
 import time
 
-NODE=1
-NET=1
-KEY="1234567891011121"
-TIMEOUT=3
-TOSLEEP=0.1
+NODE = 1
+OTHERNODE = 2
+NET = 1
+KEY = "1234567890123456"
+TIMEOUT = 5
+TOSLEEP = 0.1
 
-radio = RFM69.RFM69(RF69_915MHZ, NODE, NET, True)
-print "class initialized"
+radio = RFM69.RFM69(RF69_433MHZ, NODE, NET, True)
+print("class initialized")
 
-print "reading all registers"
-results = radio.readAllRegs()
+#print("reading all registers")
+#results = radio.readAllRegs()
 #for result in results:
-#    print result
+#    print(result)
 
-print "Performing rcCalibration"
+print("Performing rcCalibration")
 radio.rcCalibration()
 
-print "setting high power"
+print("setting high power")
 radio.setHighPower(True)
+#radio.setPowerLevel(0)
 
-print "Checking temperature"
-print radio.readTemperature(0)
+print("Checking temperature")
+print(radio.readTemperature(0))
 
-print "setting encryption"
+print("setting encryption")
 radio.encrypt(KEY)
 
-print "starting loop..."
+radio.setFrequency(433500000)
+
+radio.writeReg(REG_BITRATEMSB, RF_BITRATEMSB_1200)
+radio.writeReg(REG_BITRATELSB, RF_BITRATELSB_1200)
+
+radio.writeReg(REG_FDEVMSB, RF_FDEVMSB_5000)
+radio.writeReg(REG_FDEVLSB, RF_FDEVLSB_5000)
+
+print("starting loop...")
 sequence = 0
-while True:
+try:
+    while True:
+        msg = "I'm radio %d: %d" % (NODE, sequence)
+        sequence += 1
 
-    msg = "I'm radio %d: %d" % (NODE, sequence)
-    sequence = sequence + 1
+        print(f"TX >> {OTHERNODE}: {msg}")
+        if radio.sendWithRetry(OTHERNODE, msg, 3, 500):
+            print("ACK received")
 
-    print "tx to radio 2: " + msg
-    if radio.sendWithRetry(2, msg, 3, 20):
-        print "ack recieved"
+        print("receiving...")
+        radio.receiveBegin()
+        timedOut = 0
+        while not radio.receiveDone():
+            timedOut += TOSLEEP
+            time.sleep(TOSLEEP)
+            if timedOut > TIMEOUT:
+                print("nothing received")
+                break
 
-    print "start recv..."
-    radio.receiveBegin()
-    timedOut=0
-    while not radio.receiveDone():
-        timedOut+=TOSLEEP
-        time.sleep(TOSLEEP)
-	if timedOut > TIMEOUT:
-            print "timed out waiting for recv"
-            break
+        if timedOut <= TIMEOUT:
+            sender = radio.SENDERID
+            msg = "".join([chr(letter) for letter in radio.DATA])
+            ackReq = radio.ACKRequested()
+            print(f"RX << {sender}: {msg} (RSSI: {radio.RSSI})")
+            if ackReq:
+                print("sending ACK...")
+                time.sleep(0.05)
+                radio.sendACK()
+            time.sleep(TIMEOUT / 2)
+except KeyboardInterrupt:
+    # Clean up properly to not leave GPIO/SPI in an unusable state
+    pass
 
-    print "end recv..."
-    print " *** %s from %s RSSI:%s" % ("".join([chr(letter) for letter in radio.DATA]), radio.SENDERID, radio.RSSI)
-
-    if radio.ACKRequested():
-        print "sending ack..."
-        radio.sendACK()
-    else:
-        print "ack not requested..."
-
-print "shutting down"
+print("shutting down")
 radio.shutdown()
